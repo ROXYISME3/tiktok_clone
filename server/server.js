@@ -70,7 +70,7 @@ app.get("/api/test-db", async (req, res) => {
 // TEST MYSQL DATABASE
 // ============================================================
 
-("/api/test-db", async (req, res) => {
+app.get("/api/test-db", async (req, res) => {
   try {
     const [rows] = await pool.query(
       "SELECT NOW() AS databaseTime"
@@ -81,17 +81,18 @@ app.get("/api/test-db", async (req, res) => {
       message: "MySQL database connected successfully.",
       databaseTime: rows[0].databaseTime,
     });
+
   } catch (error) {
-    console.error("Database error:", error);
+    console.error("MYSQL ERROR:", error);
 
     res.status(500).json({
       success: false,
-      message: "MySQL database connection failed.",
-      error: error.message,
+      message: "MySQL connection failed.",
+      errorCode: error.code,
+      errorMessage: error.message,
     });
   }
 });
-
 // ============================================================
 // CREATE USERS TABLE
 // ============================================================
