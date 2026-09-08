@@ -1,0 +1,8 @@
+{
+  "name": "tiktok-clone-root",
+  "private": true,
+  "scripts": {
+    "start": "cd server && npm start",
+    "build": "cd server && npm install"
+  }
+}
