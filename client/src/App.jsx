@@ -6,7 +6,7 @@ import "./App.css";
 // BACKEND API
 // ============================================================
 
-const API_URL = "https://tiktok-api.up.railway.app";
+const API_URL = "https://tiktok-api-com.up.railway.app";
 
 function App() {
   // ============================================================
@@ -88,21 +88,24 @@ function App() {
       if (response.ok && data.success) {
         setMessage("Account created successfully! You can now log in.");
 
-        // Automatically put the information into login
         setLoginUsername(username);
         setLoginPhone(phone);
 
-        // Clear signup fields
         setSignupUsername("");
         setSignupPhone("");
 
-        // Go to login
         setTimeout(() => {
           setScreen("login");
           setMessage("");
         }, 1000);
       } else {
-        setMessage(data.message || "Registration failed.");
+        console.error("SIGNUP FAILED:", data);
+
+        setMessage(
+          data.message ||
+            data.error ||
+            `Registration failed. Server returned ${response.status}.`,
+        );
       }
     } catch (error) {
       console.error("Signup error:", error);
