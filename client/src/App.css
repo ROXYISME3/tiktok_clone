@@ -303,15 +303,16 @@ body {
 }
 
 .coin-amount {
-  font-size: 55px;
+  font-size: 64px;
   font-weight: bold;
-  margin-top: 10px;
+  line-height: 1;
+  margin: 10px 0 5px;
 }
 
 .coin-label {
-  font-size: 22px;
-  color: #25f4ee;
+  font-size: 24px;
   font-weight: bold;
+  margin: 5px 0 20px;
 }
 
 .demo-warning {
