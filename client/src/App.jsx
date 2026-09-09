@@ -3,10 +3,11 @@ import logo from "./assets/tiktok-logo.png";
 import "./App.css";
 
 // ============================================================
-// RAILWAY BACKEND
+// RAILWAY API
+// Same domain as the deployed frontend
 // ============================================================
 
-const API_URL = "https://tiktok-api.up.railway.app";
+const API_URL = "";
 
 function App() {
   // ============================================================
@@ -24,19 +25,20 @@ function App() {
   const [signupPhone, setSignupPhone] = useState("");
 
   // ============================================================
-  // GENERAL APP STATES
+  // GENERAL STATES
   // ============================================================
 
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [screen, setScreen] = useState("login");
   const [user, setUser] = useState(null);
-
   const [coins, setCoins] = useState(5000);
 
   // ============================================================
-  // PHONE NUMBER VALIDATION
-  // Must start with 09 and contain exactly 11 digits
+  // PHONE VALIDATION
+  // Must:
+  // - start with 09
+  // - contain exactly 11 digits
   // Example: 09123456789
   // ============================================================
 
@@ -45,7 +47,101 @@ function App() {
   };
 
   // ============================================================
+  // SIGN UP
+  // NAME + PHONE ONLY
+  // ============================================================
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+
+    setMessage("");
+
+    const username = signupUsername.trim();
+    const phone = signupPhone.trim();
+
+    // ----------------------------------------------------------
+    // CHECK NAME
+    // ----------------------------------------------------------
+
+    if (!username) {
+      setMessage("Please enter your name.");
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // CHECK PHONE
+    // ----------------------------------------------------------
+
+    if (!validatePhone(phone)) {
+      setMessage(
+        "Phone number must start with 09 and contain exactly 11 numbers.",
+      );
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // SEND TO BACKEND
+    // ----------------------------------------------------------
+
+    try {
+      setLoading(true);
+
+      const response = await fetch(`${API_URL}/api/signup`, {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          username: username,
+          phone: phone,
+        }),
+      });
+
+      // --------------------------------------------------------
+      // CHECK HTTP RESPONSE
+      // --------------------------------------------------------
+
+      const data = await response.json();
+
+      console.log("Signup response:", data);
+
+      // --------------------------------------------------------
+      // SUCCESS
+      // --------------------------------------------------------
+
+      if (response.ok && data.success) {
+        setMessage("Account created successfully! You can now log in.");
+
+        // Put information into login fields
+        setLoginUsername(username);
+        setLoginPhone(phone);
+
+        // Clear signup fields
+        setSignupUsername("");
+        setSignupPhone("");
+
+        // Go to login
+        setTimeout(() => {
+          setScreen("login");
+          setMessage("");
+        }, 1000);
+      } else {
+        setMessage(data.message || "Registration failed.");
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+
+      setMessage("Cannot connect to the server. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ============================================================
   // LOGIN
+  // NAME + PHONE ONLY
   // ============================================================
 
   const handleLogin = async (e) => {
@@ -98,122 +194,40 @@ function App() {
 
       const data = await response.json();
 
+      console.log("Login response:", data);
+
       // --------------------------------------------------------
       // SUCCESS
       // --------------------------------------------------------
 
-      if (data.success) {
+      if (response.ok && data.success) {
         // Save user
         localStorage.setItem("user", JSON.stringify(data.user));
 
-        // Save user in React
+        // Save token
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+        }
+
+        // React state
         setUser(data.user);
 
-        // Get coins from database
+        // Coins
         setCoins(data.user.coins ?? 5000);
 
         // Clear login fields
         setLoginUsername("");
         setLoginPhone("");
 
-        // Clear message
         setMessage("");
 
-        // Open dashboard
+        // Dashboard
         setScreen("dashboard");
       } else {
-        setMessage(data.message || "Invalid name or phone number.");
+        setMessage(data.message || "Name and phone number do not match.");
       }
     } catch (error) {
       console.error("Login error:", error);
-
-      setMessage("Cannot connect to the server. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ============================================================
-  // SIGN UP
-  // ============================================================
-
-  const handleSignup = async (e) => {
-    e.preventDefault();
-
-    setMessage("");
-
-    const username = signupUsername.trim();
-    const phone = signupPhone.trim();
-
-    // ----------------------------------------------------------
-    // CHECK NAME
-    // ----------------------------------------------------------
-
-    if (!username) {
-      setMessage("Please enter your name.");
-      return;
-    }
-
-    // ----------------------------------------------------------
-    // CHECK PHONE
-    // ----------------------------------------------------------
-
-    if (!validatePhone(phone)) {
-      setMessage(
-        "Phone number must start with 09 and contain exactly 11 numbers.",
-      );
-      return;
-    }
-
-    // ----------------------------------------------------------
-    // SEND SIGNUP REQUEST
-    // ----------------------------------------------------------
-
-    try {
-      setLoading(true);
-
-      const response = await fetch(`${API_URL}/api/signup`, {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify({
-          username: username,
-          phone: phone,
-        }),
-      });
-
-      const data = await response.json();
-
-      // --------------------------------------------------------
-      // SUCCESS
-      // --------------------------------------------------------
-
-      if (data.success) {
-        setMessage("Account created successfully! You can now log in.");
-
-        // Put the name into login
-        setLoginUsername(username);
-
-        // Put the phone into login
-        setLoginPhone(phone);
-
-        // Clear signup fields
-        setSignupUsername("");
-        setSignupPhone("");
-
-        // Go to login after a short delay
-        setTimeout(() => {
-          setScreen("login");
-          setMessage("");
-        }, 1000);
-      } else {
-        setMessage(data.message || "Registration failed.");
-      }
-    } catch (error) {
-      console.error("Signup error:", error);
 
       setMessage("Cannot connect to the server. Please try again.");
     } finally {
@@ -227,6 +241,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
 
     setUser(null);
 
@@ -234,7 +249,6 @@ function App() {
     setLoginPhone("");
 
     setCoins(5000);
-
     setMessage("");
 
     setScreen("login");
@@ -259,8 +273,6 @@ function App() {
   if (screen === "signup") {
     return (
       <div className="tiktok-page">
-        {/* HEADER */}
-
         <header className="header">
           <div className="logo">
             <img src={logo} alt="TikTok Clone" />
@@ -268,8 +280,6 @@ function App() {
 
           <div className="help">? &nbsp; Feedback and help</div>
         </header>
-
-        {/* SIGNUP */}
 
         <main className="login-container">
           <h1>Create an account</h1>
@@ -300,23 +310,19 @@ function App() {
                   setSignupPhone(value);
                 }
               }}
-              maxLength="11"
+              maxLength={11}
               inputMode="numeric"
               required
             />
 
-            {/* SIGN UP BUTTON */}
+            {/* SIGN UP */}
 
             <button className="login-button" type="submit" disabled={loading}>
               {loading ? "Creating account..." : "Sign up"}
             </button>
           </form>
 
-          {/* MESSAGE */}
-
           {message && <div className="message">{message}</div>}
-
-          {/* LOGIN LINK */}
 
           <button
             className="forgot"
@@ -328,8 +334,6 @@ function App() {
             Already have an account? Log in
           </button>
         </main>
-
-        {/* FOOTER */}
 
         <footer className="footer">
           <div className="signup">
@@ -361,8 +365,6 @@ function App() {
   if (screen === "dashboard") {
     return (
       <div className="dashboard-page">
-        {/* HEADER */}
-
         <header className="dashboard-header">
           <div className="dashboard-logo">
             <img src={logo} alt="TikTok Clone" />
@@ -377,11 +379,7 @@ function App() {
           </div>
         </header>
 
-        {/* DASHBOARD CONTENT */}
-
         <main className="dashboard-content">
-          {/* WELCOME */}
-
           <section className="welcome-section">
             <h1>
               Welcome
@@ -393,8 +391,6 @@ function App() {
               experience.
             </p>
           </section>
-
-          {/* REWARD CARD */}
 
           <section className="reward-card">
             <div className="reward-icon">🪙</div>
@@ -415,8 +411,6 @@ function App() {
               Demo Cash Out
             </button>
           </section>
-
-          {/* VIDEO SECTION */}
 
           <section className="video-section">
             <h2>For You</h2>
@@ -448,8 +442,6 @@ function App() {
             </div>
           </section>
         </main>
-
-        {/* BOTTOM NAVIGATION */}
 
         <nav className="bottom-nav">
           <button className="nav-item active">
@@ -484,8 +476,6 @@ function App() {
 
   return (
     <div className="tiktok-page">
-      {/* HEADER */}
-
       <header className="header">
         <div className="logo">
           <img src={logo} alt="TikTok Clone" />
@@ -493,8 +483,6 @@ function App() {
 
         <div className="help">? &nbsp; Feedback and help</div>
       </header>
-
-      {/* LOGIN */}
 
       <main className="login-container">
         <h1>Log in to TikTok</h1>
@@ -527,24 +515,20 @@ function App() {
                 setLoginPhone(value);
               }
             }}
-            maxLength="11"
+            maxLength={11}
             inputMode="numeric"
             required
           />
 
-          {/* LOGIN BUTTON */}
+          {/* LOGIN */}
 
           <button className="login-button" type="submit" disabled={loading}>
             {loading ? "Logging in..." : "Log in"}
           </button>
         </form>
 
-        {/* MESSAGE */}
-
         {message && <div className="message">{message}</div>}
       </main>
-
-      {/* FOOTER */}
 
       <footer className="footer">
         <div className="signup">
