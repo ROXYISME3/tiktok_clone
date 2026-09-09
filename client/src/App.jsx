@@ -7,12 +7,14 @@ import "./App.css";
 // ============================================================
 
 const API_URL = "https://tiktok-api-com.up.railway.app";
+
 function App() {
   // ============================================================
   // LOGIN STATES
   // ============================================================
 
-  const [loginInput, setLoginInput] = useState("");
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPhone, setLoginPhone] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
   // ============================================================
@@ -20,7 +22,6 @@ function App() {
   // ============================================================
 
   const [signupUsername, setSignupUsername] = useState("");
-  const [signupEmail, setSignupEmail] = useState("");
   const [signupPhone, setSignupPhone] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
@@ -37,6 +38,14 @@ function App() {
   const [coins, setCoins] = useState(5000);
 
   // ============================================================
+  // PHONE VALIDATION
+  // ============================================================
+
+  const isValidPhone = (phone) => {
+    return /^09\d{9}$/.test(phone);
+  };
+
+  // ============================================================
   // LOGIN
   // ============================================================
 
@@ -45,50 +54,64 @@ function App() {
 
     setMessage("");
 
-    if (!loginInput.trim() || !loginPassword) {
-      setMessage("Please enter your email/username/phone and password.");
+    // ----------------------------------------------------------
+    // CHECK USERNAME
+    // ----------------------------------------------------------
+
+    if (!loginUsername.trim()) {
+      setMessage("Username is required.");
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // CHECK PHONE
+    // ----------------------------------------------------------
+
+    if (!loginPhone.trim()) {
+      setMessage("Phone number is required.");
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // CHECK PHONE FORMAT
+    // ----------------------------------------------------------
+
+    if (!isValidPhone(loginPhone)) {
+      setMessage(
+        "Phone number must start with 09 and contain exactly 11 digits.",
+      );
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // CHECK PASSWORD
+    // ----------------------------------------------------------
+
+    if (!loginPassword) {
+      setMessage("Password is required.");
       return;
     }
 
     try {
       setLoading(true);
 
-      let response;
-
-      const looksLikePhone = /^[0-9+\-\s()]+$/.test(loginInput.trim());
-
       // --------------------------------------------------------
-      // PHONE LOGIN
+      // SEND LOGIN REQUEST TO RAILWAY
       // --------------------------------------------------------
 
-      if (looksLikePhone) {
-        response = await fetch(`${API_URL}/api/login-phone`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            phone: loginInput.trim(),
-            password: loginPassword,
-          }),
-        });
-      }
+      const response = await fetch(`${API_URL}/api/login`, {
+        method: "POST",
 
-      // --------------------------------------------------------
-      // EMAIL / USERNAME LOGIN
-      // --------------------------------------------------------
-      else {
-        response = await fetch(`${API_URL}/api/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: loginInput.trim(),
-            password: loginPassword,
-          }),
-        });
-      }
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          username: loginUsername.trim(),
+          phone: loginPhone.trim(),
+          password: loginPassword,
+        }),
+      });
 
       // --------------------------------------------------------
       // READ SERVER RESPONSE
@@ -96,17 +119,23 @@ function App() {
 
       const data = await response.json();
 
+      // --------------------------------------------------------
+      // LOGIN SUCCESS
+      // --------------------------------------------------------
+
       if (data.success) {
-        // Save the logged-in user
+        // Save logged-in user
         localStorage.setItem("user", JSON.stringify(data.user));
 
         // Save user in React
         setUser(data.user);
 
-        // Get the actual coin balance from MySQL
+        // Get coins from database
         setCoins(data.user.coins ?? 5000);
 
-        // Clear password
+        // Clear login fields
+        setLoginUsername("");
+        setLoginPhone("");
         setLoginPassword("");
 
         // Clear message
@@ -115,7 +144,9 @@ function App() {
         // Go to dashboard
         setScreen("dashboard");
       } else {
-        setMessage(data.message || "Invalid login information.");
+        setMessage(
+          data.message || "Invalid username, phone number, or password.",
+        );
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -136,7 +167,7 @@ function App() {
     setMessage("");
 
     // ----------------------------------------------------------
-    // VALIDATION
+    // CHECK USERNAME
     // ----------------------------------------------------------
 
     if (!signupUsername.trim()) {
@@ -144,10 +175,29 @@ function App() {
       return;
     }
 
-    if (!signupEmail.trim() && !signupPhone.trim()) {
-      setMessage("Please enter an email or phone number.");
+    // ----------------------------------------------------------
+    // CHECK PHONE
+    // ----------------------------------------------------------
+
+    if (!signupPhone.trim()) {
+      setMessage("Phone number is required.");
       return;
     }
+
+    // ----------------------------------------------------------
+    // CHECK PHONE FORMAT
+    // ----------------------------------------------------------
+
+    if (!isValidPhone(signupPhone)) {
+      setMessage(
+        "Phone number must start with 09 and contain exactly 11 digits.",
+      );
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // CHECK PASSWORD
+    // ----------------------------------------------------------
 
     if (!signupPassword) {
       setMessage("Password is required.");
@@ -159,17 +209,21 @@ function App() {
       return;
     }
 
+    // ----------------------------------------------------------
+    // CHECK CONFIRM PASSWORD
+    // ----------------------------------------------------------
+
     if (signupPassword !== signupConfirmPassword) {
       setMessage("Passwords do not match.");
       return;
     }
 
-    // ----------------------------------------------------------
-    // SEND TO RAILWAY SERVER
-    // ----------------------------------------------------------
-
     try {
       setLoading(true);
+
+      // --------------------------------------------------------
+      // SEND SIGNUP REQUEST TO RAILWAY
+      // --------------------------------------------------------
 
       const response = await fetch(`${API_URL}/api/signup`, {
         method: "POST",
@@ -180,31 +234,35 @@ function App() {
 
         body: JSON.stringify({
           username: signupUsername.trim(),
-
-          email: signupEmail.trim() || null,
-
-          phone: signupPhone.trim() || null,
-
+          phone: signupPhone.trim(),
           password: signupPassword,
         }),
       });
 
+      // --------------------------------------------------------
+      // READ SERVER RESPONSE
+      // --------------------------------------------------------
+
       const data = await response.json();
+
+      // --------------------------------------------------------
+      // SIGNUP SUCCESS
+      // --------------------------------------------------------
 
       if (data.success) {
         setMessage("Account created successfully! Please log in.");
 
-        // Put username into login field
-        setLoginInput(signupUsername.trim());
+        // Put signup information into login fields
+        setLoginUsername(signupUsername.trim());
+        setLoginPhone(signupPhone.trim());
 
-        // Clear signup form
+        // Clear signup fields
         setSignupUsername("");
-        setSignupEmail("");
         setSignupPhone("");
         setSignupPassword("");
         setSignupConfirmPassword("");
 
-        // Go back to login
+        // Return to login
         setTimeout(() => {
           setScreen("login");
         }, 800);
@@ -229,10 +287,11 @@ function App() {
 
     setUser(null);
 
-    setLoginInput("");
+    setLoginUsername("");
+    setLoginPhone("");
     setLoginPassword("");
 
-    setCoins(10000);
+    setCoins(5000);
 
     setMessage("");
 
@@ -247,7 +306,7 @@ function App() {
     alert(
       "Demo Cash Out\n\n" +
         "This is only a demonstration. " +
-        "The 10,000 virtual coins have no real monetary value.",
+        "The virtual coins have no real monetary value.",
     );
   };
 
@@ -276,6 +335,8 @@ function App() {
           <p className="description">Create your TikTok Clone account.</p>
 
           <form onSubmit={handleSignup}>
+            {/* USERNAME */}
+
             <input
               type="text"
               placeholder="Username"
@@ -284,19 +345,23 @@ function App() {
               required
             />
 
-            <input
-              type="email"
-              placeholder="Email"
-              value={signupEmail}
-              onChange={(e) => setSignupEmail(e.target.value)}
-            />
+            {/* PHONE */}
 
             <input
               type="tel"
-              placeholder="Phone number (optional)"
+              inputMode="numeric"
+              maxLength={11}
+              placeholder="09XXXXXXXXX"
               value={signupPhone}
-              onChange={(e) => setSignupPhone(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, "");
+
+                setSignupPhone(value);
+              }}
+              required
             />
+
+            {/* PASSWORD */}
 
             <input
               type="password"
@@ -306,6 +371,8 @@ function App() {
               required
             />
 
+            {/* CONFIRM PASSWORD */}
+
             <input
               type="password"
               placeholder="Confirm password"
@@ -314,10 +381,14 @@ function App() {
               required
             />
 
+            {/* SIGN UP BUTTON */}
+
             <button className="login-button" type="submit" disabled={loading}>
               {loading ? "Creating account..." : "Sign up"}
             </button>
           </form>
+
+          {/* MESSAGE */}
 
           {message && <div className="message">{message}</div>}
 
@@ -507,13 +578,33 @@ function App() {
         </p>
 
         <form onSubmit={handleLogin}>
+          {/* USERNAME */}
+
           <input
             type="text"
-            placeholder="Email, username, or phone"
-            value={loginInput}
-            onChange={(e) => setLoginInput(e.target.value)}
+            placeholder="Username"
+            value={loginUsername}
+            onChange={(e) => setLoginUsername(e.target.value)}
             required
           />
+
+          {/* PHONE */}
+
+          <input
+            type="tel"
+            inputMode="numeric"
+            maxLength={11}
+            placeholder="09XXXXXXXXX"
+            value={loginPhone}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, "");
+
+              setLoginPhone(value);
+            }}
+            required
+          />
+
+          {/* PASSWORD */}
 
           <input
             type="password"
@@ -523,10 +614,14 @@ function App() {
             required
           />
 
+          {/* LOGIN BUTTON */}
+
           <button className="login-button" type="submit" disabled={loading}>
             {loading ? "Logging in..." : "Log in"}
           </button>
         </form>
+
+        {/* FORGOT PASSWORD */}
 
         <button
           className="forgot"
@@ -534,6 +629,8 @@ function App() {
         >
           Forgot password?
         </button>
+
+        {/* MESSAGE */}
 
         {message && <div className="message">{message}</div>}
       </main>
