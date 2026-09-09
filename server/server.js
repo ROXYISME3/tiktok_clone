@@ -180,4 +180,284 @@ app.post("/api/signup", async (req, res) => {
 
       return res.status(409).json({
         success: false,
-        message: "This
+        message: "This phone number is already registered.",
+      });
+    }
+
+    // ========================================================
+    // CHECK USERNAME
+    // ========================================================
+
+    console.log("STEP 6: Checking username in database");
+
+    const [existingUsername] = await pool.query(
+      "SELECT id FROM users WHERE username = ? LIMIT 1",
+      [cleanUsername]
+    );
+
+    console.log("STEP 7: Username database check completed");
+    console.log("Existing username:", existingUsername.length);
+
+    if (existingUsername.length > 0) {
+      console.log("SIGNUP ERROR: Username already registered");
+
+      return res.status(409).json({
+        success: false,
+        message: "This username is already registered.",
+      });
+    }
+
+    // ========================================================
+    // CREATE ACCOUNT
+    // ========================================================
+
+    console.log("STEP 8: Creating account");
+
+    const [result] = await pool.query(
+      `
+      INSERT INTO users
+      (username, phone, coins)
+      VALUES (?, ?, ?)
+      `,
+      [cleanUsername, cleanPhone, 5000]
+    );
+
+    console.log("STEP 9: Account created");
+    console.log("Inserted ID:", result.insertId);
+
+    // ========================================================
+    // GET NEW USER
+    // ========================================================
+
+    console.log("STEP 10: Getting newly created user");
+
+    const [newUserRows] = await pool.query(
+      `
+      SELECT id, username, phone, coins
+      FROM users
+      WHERE id = ?
+      LIMIT 1
+      `,
+      [result.insertId]
+    );
+
+    if (newUserRows.length === 0) {
+      console.log("SIGNUP ERROR: User could not be retrieved");
+
+      return res.status(500).json({
+        success: false,
+        message: "Account was created but could not be retrieved.",
+      });
+    }
+
+    const newUser = newUserRows[0];
+
+    console.log("STEP 11: New user retrieved");
+    console.log(newUser);
+
+    // ========================================================
+    // CREATE JWT
+    // ========================================================
+
+    console.log("STEP 12: Creating JWT");
+
+    const token = jwt.sign(
+      {
+        id: newUser.id,
+        username: newUser.username,
+      },
+      process.env.JWT_SECRET || "development-secret",
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    console.log("STEP 13: JWT created");
+
+    // ========================================================
+    // SIGNUP SUCCESS
+    // ========================================================
+
+    console.log("=================================");
+    console.log("SIGNUP SUCCESS");
+    console.log("User:", newUser);
+    console.log("=================================");
+
+    return res.status(201).json({
+      success: true,
+      message: "Account created successfully.",
+      user: newUser,
+      token: token,
+    });
+  } catch (error) {
+    // ========================================================
+    // SIGNUP ERROR
+    // ========================================================
+
+    console.error("=================================");
+    console.error("SIGNUP ERROR");
+    console.error("Message:", error.message);
+    console.error("Full error:", error);
+    console.error("=================================");
+
+    return res.status(500).json({
+      success: false,
+      message: "Registration failed.",
+      error: error.message,
+    });
+  }
+});
+
+// ============================================================
+// LOGIN
+// USERNAME + PHONE ONLY
+// ============================================================
+
+app.post("/api/login", async (req, res) => {
+  try {
+    const { username, phone } = req.body;
+
+    // ========================================================
+    // LOGIN REQUEST
+    // ========================================================
+
+    console.log("=================================");
+    console.log("LOGIN REQUEST");
+    console.log("Username:", username);
+    console.log("Phone:", phone);
+    console.log("STEP 1: Login request received");
+    console.log("=================================");
+
+    // ========================================================
+    // VALIDATE USERNAME
+    // ========================================================
+
+    if (!username || !username.trim()) {
+      console.log("LOGIN ERROR: Username is empty");
+
+      return res.status(400).json({
+        success: false,
+        message: "Please enter your name.",
+      });
+    }
+
+    console.log("STEP 2: Username valid");
+
+    // ========================================================
+    // VALIDATE PHONE
+    // ========================================================
+
+    if (!phone || !/^09\d{9}$/.test(phone)) {
+      console.log("LOGIN ERROR: Invalid phone");
+
+      return res.status(400).json({
+        success: false,
+        message:
+          "Phone number must start with 09 and contain exactly 11 digits.",
+      });
+    }
+
+    console.log("STEP 3: Phone valid");
+
+    const cleanUsername = username.trim();
+    const cleanPhone = phone.trim();
+
+    // ========================================================
+    // FIND USER
+    // ========================================================
+
+    console.log("STEP 4: Searching user in database");
+
+    const [users] = await pool.query(
+      `
+      SELECT id, username, phone, coins
+      FROM users
+      WHERE username = ?
+      AND phone = ?
+      LIMIT 1
+      `,
+      [cleanUsername, cleanPhone]
+    );
+
+    console.log("STEP 5: User search completed");
+    console.log("Users found:", users.length);
+
+    // ========================================================
+    // USER NOT FOUND
+    // ========================================================
+
+    if (users.length === 0) {
+      console.log("LOGIN ERROR: Username and phone do not match");
+
+      return res.status(401).json({
+        success: false,
+        message: "Name and phone number do not match.",
+      });
+    }
+
+    const user = users[0];
+
+    // ========================================================
+    // CREATE JWT
+    // ========================================================
+
+    console.log("STEP 6: Creating JWT");
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        username: user.username,
+      },
+      process.env.JWT_SECRET || "development-secret",
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    // ========================================================
+    // LOGIN SUCCESS
+    // ========================================================
+
+    console.log("=================================");
+    console.log("LOGIN SUCCESS");
+    console.log("User:", user);
+    console.log("=================================");
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successful.",
+      user: user,
+      token: token,
+    });
+  } catch (error) {
+    // ========================================================
+    // LOGIN ERROR
+    // ========================================================
+
+    console.error("=================================");
+    console.error("LOGIN ERROR");
+    console.error("Message:", error.message);
+    console.error("Full error:", error);
+    console.error("=================================");
+
+    return res.status(500).json({
+      success: false,
+      message: "Login failed.",
+      error: error.message,
+    });
+  }
+});
+
+// ============================================================
+// START SERVER
+// ============================================================
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("=================================");
+  console.log(`TikTok Clone API running on port ${PORT}`);
+  console.log("Backend: https://tiktok-api.up.railway.app");
+  console.log(
+    "Frontend: https://tiktok-api-com.up.railway.app"
+  );
+  console.log("=================================");
+});
