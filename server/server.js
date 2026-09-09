@@ -2,44 +2,63 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
-const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const pool = require("./db");
 
 const app = express();
 
 // ============================================================
-// CORS
+// PORT
 // ============================================================
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://tiktok-api.up.railway.app",
-];
+const PORT = process.env.PORT || 5000;
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin, such as Postman
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error("Not allowed by CORS"));
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+// ============================================================
+// MIDDLEWARE
+// ============================================================
 
 app.use(express.json());
 
 // ============================================================
-// TEST SERVER
+// CORS
+// ============================================================
+//
+// For now we allow requests from your deployed frontend.
+// This prevents the CORS problem while we are getting
+// signup and login working.
+//
+// ============================================================
+
+app.use(
+  cors({
+    origin: true,
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+      "OPTIONS",
+    ],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+    ],
+  })
+);
+
+// ============================================================
+// HOME / TEST SERVER
+// ============================================================
+
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "TikTok Clone API is running.",
+  });
+});
+
+// ============================================================
+// TEST DATABASE
 // ============================================================
 
 app.get("/api/test-db", async (req, res) => {
@@ -50,79 +69,90 @@ app.get("/api/test-db", async (req, res) => {
 
     res.json({
       success: true,
-      message: "MySQL database connected successfully.",
+      message:
+        "MySQL database connected successfully.",
       databaseTime: rows[0].databaseTime,
     });
-
   } catch (error) {
-    console.error("MYSQL ERROR:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "MySQL connection failed.",
-      errorCode: error.code,
-      errorMessage: error.message,
-    });
-  }
-});
-
-// ============================================================
-// TEST MYSQL DATABASE
-// ============================================================
-
-app.get("/api/test-db", async (req, res) => {
-  try {
-    const [rows] = await pool.query(
-      "SELECT NOW() AS databaseTime"
+    console.error(
+      "MYSQL ERROR:",
+      error
     );
 
-    res.json({
-      success: true,
-      message: "MySQL database connected successfully.",
-      databaseTime: rows[0].databaseTime,
-    });
-
-  } catch (error) {
-    console.error("MYSQL ERROR:", error);
-
     res.status(500).json({
       success: false,
-      message: "MySQL connection failed.",
+      message:
+        "MySQL connection failed.",
       errorCode: error.code,
       errorMessage: error.message,
     });
   }
 });
+
 // ============================================================
-// CREATE USERS TABLE
+// DATABASE SETUP
+// ============================================================
+//
+// Open this once:
+//
+// https://tiktok-api.up.railway.app/api/setup
+//
 // ============================================================
 
 app.get("/api/setup", async (req, res) => {
-  try {app.get
+  try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
+
         username VARCHAR(100) NOT NULL UNIQUE,
-        email VARCHAR(255) UNIQUE,
-        phone VARCHAR(30) UNIQUE,
-        password_hash VARCHAR(255) NOT NULL,
+
+        email VARCHAR(255) NULL UNIQUE,
+
+        phone VARCHAR(30) NOT NULL UNIQUE,
+
+        password_hash VARCHAR(255) NULL,
+
         coins INT NOT NULL DEFAULT 5000,
-        profile_picture TEXT,
-        bio TEXT,
+
+        profile_picture TEXT NULL,
+
+        bio TEXT NULL,
+
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
+    // Make password optional if the table
+    // already existed from the old version.
+
+    try {
+      await pool.query(`
+        ALTER TABLE users
+        MODIFY password_hash VARCHAR(255) NULL
+      `);
+    } catch (alterError) {
+      console.log(
+        "Password column already configured."
+      );
+    }
+
     res.json({
       success: true,
-      message: "Users table is ready.",
+      message:
+        "Users table is ready.",
     });
+
   } catch (error) {
-    console.error("Setup error:", error);
+    console.error(
+      "DATABASE SETUP ERROR:",
+      error
+    );
 
     res.status(500).json({
       success: false,
-      message: "Database setup failed.",
+      message:
+        "Database setup failed.",
       error: error.message,
     });
   }
@@ -130,231 +160,283 @@ app.get("/api/setup", async (req, res) => {
 
 // ============================================================
 // SIGN UP
+// NAME + PHONE
 // ============================================================
 
 app.post("/api/signup", async (req, res) => {
   try {
-    const {
-      username,
-      email,
-      phone,
-      password,
-    } = req.body;
-
-    // --------------------------------------------------------
-    // VALIDATION
-    // --------------------------------------------------------
-
-    if (!username || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Username and password are required.",
-      });
-    }
-
-    if (!email && !phone) {
-      return res.status(400).json({
-        success: false,
-        message: "Email or phone number is required.",
-      });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 6 characters.",
-      });
-    }
-
-    // --------------------------------------------------------
-    // CHECK USERNAME
-    // --------------------------------------------------------
-
-    const [usernameRows] = await pool.query(
-      "SELECT id FROM users WHERE username = ? LIMIT 1",
-      [username]
+    console.log(
+      "SIGNUP REQUEST:",
+      req.body
     );
 
-    if (usernameRows.length > 0) {
-      return res.status(409).json({
+    const username =
+      typeof req.body.username === "string"
+        ? req.body.username.trim()
+        : "";
+
+    const phone =
+      typeof req.body.phone === "string"
+        ? req.body.phone.trim()
+        : "";
+
+    // --------------------------------------------------------
+    // CHECK NAME
+    // --------------------------------------------------------
+
+    if (!username) {
+      return res.status(400).json({
         success: false,
-        message: "Username already exists.",
+        message: "Name is required.",
       });
-    }
-
-    // --------------------------------------------------------
-    // CHECK EMAIL
-    // --------------------------------------------------------
-
-    if (email) {
-      const [emailRows] = await pool.query(
-        "SELECT id FROM users WHERE email = ? LIMIT 1",
-        [email]
-      );
-
-      if (emailRows.length > 0) {
-        return res.status(409).json({
-          success: false,
-          message: "Email already exists.",
-        });
-      }
     }
 
     // --------------------------------------------------------
     // CHECK PHONE
     // --------------------------------------------------------
 
-    if (phone) {
-      const [phoneRows] = await pool.query(
-        "SELECT id FROM users WHERE phone = ? LIMIT 1",
-        [phone]
-      );
-
-      if (phoneRows.length > 0) {
-        return res.status(409).json({
-          success: false,
-          message: "Phone number already exists.",
-        });
-      }
+    if (!/^09\d{9}$/.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Phone number must start with 09 and contain exactly 11 numbers.",
+      });
     }
 
     // --------------------------------------------------------
-    // HASH PASSWORD
+    // CHECK EXISTING NAME
     // --------------------------------------------------------
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const [usernameRows] =
+      await pool.query(
+        `
+        SELECT id
+        FROM users
+        WHERE username = ?
+        LIMIT 1
+        `,
+        [username]
+      );
+
+    if (usernameRows.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Name already exists.",
+      });
+    }
 
     // --------------------------------------------------------
-    // INSERT USER
+    // CHECK EXISTING PHONE
     // --------------------------------------------------------
 
-    const [result] = await pool.query(
-      `
-      INSERT INTO users
-      (
-        username,
-        email,
-        phone,
-        password_hash,
-        coins
-      )
-      VALUES (?, ?, ?, ?, ?)
-      `,
-      [
-        username,
-        email || null,
-        phone || null,
-        hashedPassword,
-        5000,
-      ]
+    const [phoneRows] =
+      await pool.query(
+        `
+        SELECT id
+        FROM users
+        WHERE phone = ?
+        LIMIT 1
+        `,
+        [phone]
+      );
+
+    if (phoneRows.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "Phone number already exists.",
+      });
+    }
+
+    // --------------------------------------------------------
+    // CREATE USER
+    // --------------------------------------------------------
+
+    const [result] =
+      await pool.query(
+        `
+        INSERT INTO users
+        (
+          username,
+          phone,
+          password_hash,
+          coins
+        )
+        VALUES
+        (?, ?, NULL, 5000)
+        `,
+        [
+          username,
+          phone,
+        ]
+      );
+
+    // --------------------------------------------------------
+    // GET NEW USER
+    // --------------------------------------------------------
+
+    const [newUserRows] =
+      await pool.query(
+        `
+        SELECT
+          id,
+          username,
+          phone,
+          coins,
+          profile_picture,
+          bio,
+          created_at
+        FROM users
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [result.insertId]
+      );
+
+    console.log(
+      "USER CREATED:",
+      newUserRows[0]
     );
 
     // --------------------------------------------------------
-    // GET CREATED USER
+    // SUCCESS
     // --------------------------------------------------------
 
-    const [newUserRows] = await pool.query(
-      `
-      SELECT
-        id,
-        username,
-        email,
-        phone,
-        coins,
-        created_at
-      FROM users
-      WHERE id = ?
-      `,
-      [result.insertId]
-    );
-
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message: "Account created successfully.",
+      message:
+        "Account created successfully.",
       user: newUserRows[0],
     });
 
   } catch (error) {
-    console.error("Signup error:", error);
+    console.error(
+      "SIGNUP ERROR:",
+      error
+    );
 
-    if (error.code === "ER_DUP_ENTRY") {
+    // Duplicate database entry
+    if (
+      error.code ===
+      "ER_DUP_ENTRY"
+    ) {
       return res.status(409).json({
         success: false,
         message:
-          "Username, email, or phone number already exists.",
+          "Name or phone number already exists.",
       });
     }
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Registration failed.",
+      message:
+        "Registration failed.",
       error: error.message,
     });
   }
 });
 
 // ============================================================
-// LOGIN WITH USERNAME OR EMAIL
+// LOGIN
+// NAME + PHONE
 // ============================================================
 
 app.post("/api/login", async (req, res) => {
   try {
-    const {
-      username,
-      password,
-    } = req.body;
+    console.log(
+      "LOGIN REQUEST:",
+      req.body
+    );
+
+    const username =
+      typeof req.body.username === "string"
+        ? req.body.username.trim()
+        : "";
+
+    const phone =
+      typeof req.body.phone === "string"
+        ? req.body.phone.trim()
+        : "";
 
     // --------------------------------------------------------
-    // VALIDATION
+    // CHECK NAME
     // --------------------------------------------------------
 
-    if (!username || !password) {
+    if (!username) {
       return res.status(400).json({
         success: false,
         message:
-          "Username/email and password are required.",
+          "Name is required.",
+      });
+    }
+
+    // --------------------------------------------------------
+    // CHECK PHONE
+    // --------------------------------------------------------
+
+    if (!/^09\d{9}$/.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Phone number must start with 09 and contain exactly 11 numbers.",
       });
     }
 
     // --------------------------------------------------------
     // FIND USER
+    // BOTH NAME AND PHONE MUST MATCH
     // --------------------------------------------------------
 
-    const [rows] = await pool.query(
-      `
-      SELECT *
-      FROM users
-      WHERE username = ?
-         OR email = ?
-      LIMIT 1
-      `,
-      [username, username]
-    );
+    const [rows] =
+      await pool.query(
+        `
+        SELECT
+          id,
+          username,
+          phone,
+          coins,
+          profile_picture,
+          bio,
+          created_at
+        FROM users
+        WHERE username = ?
+        AND phone = ?
+        LIMIT 1
+        `,
+        [
+          username,
+          phone,
+        ]
+      );
+
+    // --------------------------------------------------------
+    // USER NOT FOUND
+    // --------------------------------------------------------
 
     if (rows.length === 0) {
       return res.status(401).json({
         success: false,
         message:
-          "Invalid username/email or password.",
+          "Name and phone number do not match.",
       });
     }
 
     const user = rows[0];
 
     // --------------------------------------------------------
-    // CHECK PASSWORD
+    // JWT SECRET
     // --------------------------------------------------------
 
-    const passwordMatch = await bcrypt.compare(
-      password,
-      user.password_hash
-    );
+    if (!process.env.JWT_SECRET) {
+      console.error(
+        "JWT_SECRET is missing."
+      );
 
-    if (!passwordMatch) {
-      return res.status(401).json({
+      return res.status(500).json({
         success: false,
         message:
-          "Invalid username/email or password.",
+          "JWT_SECRET is not configured on the server.",
       });
     }
 
@@ -362,178 +444,106 @@ app.post("/api/login", async (req, res) => {
     // CREATE JWT
     // --------------------------------------------------------
 
-    const token = jwt.sign(
-      {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "7d",
-      }
-    );
+    const token =
+      jwt.sign(
+        {
+          id: user.id,
+          username: user.username,
+          phone: user.phone,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "7d",
+        }
+      );
 
     // --------------------------------------------------------
-    // SEND RESPONSE
+    // LOGIN SUCCESS
     // --------------------------------------------------------
 
-    res.json({
+    return res.json({
       success: true,
-      message: "Login successful.",
-      token,
+      message:
+        "Login successful.",
+      token: token,
       user: {
         id: user.id,
         username: user.username,
-        email: user.email,
         phone: user.phone,
         coins: user.coins,
+        profile_picture:
+          user.profile_picture,
+        bio: user.bio,
+        created_at:
+          user.created_at,
       },
     });
 
   } catch (error) {
-    console.error("Login error:", error);
+    console.error(
+      "LOGIN ERROR:",
+      error
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Login failed.",
+      message:
+        "Login failed.",
       error: error.message,
     });
   }
 });
 
 // ============================================================
-// GET LOGGED-IN USER
+// GET USER
 // ============================================================
 
 app.get("/api/user/:id", async (req, res) => {
   try {
-    const userId = req.params.id;
+    const userId =
+      req.params.id;
 
-    const [rows] = await pool.query(
-      `
-      SELECT
-        id,
-        username,
-        email,
-        phone,
-        coins,
-        profile_picture,
-        bio,
-        created_at
-      FROM users
-      WHERE id = ?
-      LIMIT 1
-      `,
-      [userId]
-    );
+    const [rows] =
+      await pool.query(
+        `
+        SELECT
+          id,
+          username,
+          phone,
+          coins,
+          profile_picture,
+          bio,
+          created_at
+        FROM users
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [userId]
+      );
 
     if (rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "User not found.",
+        message:
+          "User not found.",
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       user: rows[0],
     });
 
   } catch (error) {
-    console.error("Get user error:", error);
+    console.error(
+      "GET USER ERROR:",
+      error
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Failed to get user.",
-    });
-  }
-});
-
-// ============================================================
-// LOGIN WITH PHONE
-// ============================================================
-
-app.post("/api/login-phone", async (req, res) => {
-  try {
-    const {
-      phone,
-      password,
-    } = req.body;
-
-    if (!phone || !password) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Phone number and password are required.",
-      });
-    }
-
-    const [rows] = await pool.query(
-      `
-      SELECT *
-      FROM users
-      WHERE phone = ?
-      LIMIT 1
-      `,
-      [phone]
-    );
-
-    if (rows.length === 0) {
-      return res.status(401).json({
-        success: false,
-        message:
-          "Invalid phone number or password.",
-      });
-    }
-
-    const user = rows[0];
-
-    const passwordMatch = await bcrypt.compare(
-      password,
-      user.password_hash
-    );
-
-    if (!passwordMatch) {
-      return res.status(401).json({
-        success: false,
-        message:
-          "Invalid phone number or password.",
-      });
-    }
-
-    const token = jwt.sign(
-      {
-        id: user.id,
-        username: user.username,
-        phone: user.phone,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "7d",
-      }
-    );
-
-    res.json({
-      success: true,
-      message: "Login successful.",
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        phone: user.phone,
-        coins: user.coins,
-      },
-    });
-
-  } catch (error) {
-    console.error("Phone login error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Phone login failed.",
-      error: error.message,
+      message:
+        "Failed to get user.",
     });
   }
 });
@@ -542,8 +552,12 @@ app.post("/api/login-phone", async (req, res) => {
 // START SERVER
 // ============================================================
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+    console.log(
+      `TikTok Clone API running on port ${PORT}`
+    );
+  }
+);
