@@ -5,6 +5,10 @@ import "./App.css";
 // ============================================================
 // BACKEND API
 // ============================================================
+// IMPORTANT:
+// FRONTEND = https://tiktok-api-com.up.railway.app
+// BACKEND  = https://tiktok-api.up.railway.app
+// ============================================================
 
 const API_URL = "https://tiktok-api-com.up.railway.app";
 
@@ -55,10 +59,18 @@ function App() {
     const username = signupUsername.trim();
     const phone = signupPhone.trim();
 
+    // ----------------------------------------------------------
+    // Validate username
+    // ----------------------------------------------------------
+
     if (!username) {
       setMessage("Please enter your name.");
       return;
     }
+
+    // ----------------------------------------------------------
+    // Validate phone
+    // ----------------------------------------------------------
 
     if (!validatePhone(phone)) {
       setMessage(
@@ -70,20 +82,33 @@ function App() {
     try {
       setLoading(true);
 
+      console.log("Sending signup request...");
+      console.log("Username:", username);
+      console.log("Phone:", phone);
+      console.log("Backend:", API_URL);
+
       const response = await fetch(`${API_URL}/api/signup`, {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
         },
+
         body: JSON.stringify({
           username: username,
           phone: phone,
         }),
       });
 
+      console.log("Signup HTTP status:", response.status);
+
       const data = await response.json();
 
       console.log("Signup response:", data);
+
+      // --------------------------------------------------------
+      // Successful registration
+      // --------------------------------------------------------
 
       if (response.ok && data.success) {
         setMessage("Account created successfully! You can now log in.");
@@ -99,6 +124,10 @@ function App() {
           setMessage("");
         }, 1000);
       } else {
+        // ------------------------------------------------------
+        // Backend returned an error
+        // ------------------------------------------------------
+
         console.error("SIGNUP FAILED:", data);
 
         setMessage(
@@ -108,7 +137,11 @@ function App() {
         );
       }
     } catch (error) {
-      console.error("Signup error:", error);
+      // --------------------------------------------------------
+      // Network / connection error
+      // --------------------------------------------------------
+
+      console.error("SIGNUP ERROR:", error);
 
       setMessage("Cannot connect to the server. Please try again.");
     } finally {
@@ -129,10 +162,18 @@ function App() {
     const username = loginUsername.trim();
     const phone = loginPhone.trim();
 
+    // ----------------------------------------------------------
+    // Validate username
+    // ----------------------------------------------------------
+
     if (!username) {
       setMessage("Please enter your name.");
       return;
     }
+
+    // ----------------------------------------------------------
+    // Validate phone
+    // ----------------------------------------------------------
 
     if (!validatePhone(phone)) {
       setMessage(
@@ -144,20 +185,33 @@ function App() {
     try {
       setLoading(true);
 
+      console.log("Sending login request...");
+      console.log("Username:", username);
+      console.log("Phone:", phone);
+      console.log("Backend:", API_URL);
+
       const response = await fetch(`${API_URL}/api/login`, {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
         },
+
         body: JSON.stringify({
           username: username,
           phone: phone,
         }),
       });
 
+      console.log("Login HTTP status:", response.status);
+
       const data = await response.json();
 
       console.log("Login response:", data);
+
+      // --------------------------------------------------------
+      // Successful login
+      // --------------------------------------------------------
 
       if (response.ok && data.success) {
         // Save user
@@ -183,10 +237,20 @@ function App() {
         // Open dashboard
         setScreen("dashboard");
       } else {
+        // ------------------------------------------------------
+        // Backend returned login error
+        // ------------------------------------------------------
+
+        console.error("LOGIN FAILED:", data);
+
         setMessage(data.message || "Name and phone number do not match.");
       }
     } catch (error) {
-      console.error("Login error:", error);
+      // --------------------------------------------------------
+      // Network / connection error
+      // --------------------------------------------------------
+
+      console.error("LOGIN ERROR:", error);
 
       setMessage("Cannot connect to the server. Please try again.");
     } finally {
