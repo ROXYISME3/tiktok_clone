@@ -16,25 +16,28 @@ const PORT = process.env.PORT || 8080;
 // ============================================================
 // CORS
 // ============================================================
-
-// IMPORTANT:
-// FRONTEND = https://tiktok-api.up.railway.app
-// BACKEND  = https://tiktok-api-com.up.railway.app
+//
+// FRONTEND = https://tiktok-api-com.up.railway.app
+// BACKEND  = https://tiktok-api.up.railway.app
+//
+// The FRONTEND must be allowed to send requests to the BACKEND.
+// ============================================================
 
 const allowedOrigins = [
-  "https://tiktok-api.up.railway.app",
+  "https://tiktok-api-com.up.railway.app",
   "http://localhost:5173",
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests without an origin
-      // such as direct browser/API requests
+      // Allow requests that don't have an Origin header
+      // Example: opening the API directly in a browser
       if (!origin) {
         return callback(null, true);
       }
 
+      // Allow our frontend
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
@@ -57,7 +60,7 @@ app.use(
 app.use(express.json());
 
 // ============================================================
-// BASIC TEST ROUTE
+// BASIC API TEST
 // ============================================================
 
 app.get("/", (req, res) => {
@@ -81,7 +84,7 @@ app.get("/api/test-db", async (req, res) => {
       database: rows,
     });
   } catch (error) {
-    console.error("Database test error:", error);
+    console.error("DATABASE TEST ERROR:", error);
 
     res.status(500).json({
       success: false,
@@ -100,10 +103,11 @@ app.post("/api/signup", async (req, res) => {
   try {
     const { username, phone } = req.body;
 
-    console.log("SIGNUP REQUEST:", {
-      username,
-      phone,
-    });
+    console.log("=================================");
+    console.log("SIGNUP REQUEST");
+    console.log("Username:", username);
+    console.log("Phone:", phone);
+    console.log("=================================");
 
     // ----------------------------------------------------------
     // Validate username
@@ -177,7 +181,7 @@ app.post("/api/signup", async (req, res) => {
     );
 
     // ----------------------------------------------------------
-    // Get created user
+    // Get newly created user
     // ----------------------------------------------------------
 
     const [newUserRows] = await pool.query(
@@ -190,10 +194,17 @@ app.post("/api/signup", async (req, res) => {
       [result.insertId]
     );
 
+    if (newUserRows.length === 0) {
+      return res.status(500).json({
+        success: false,
+        message: "Account was created but could not be retrieved.",
+      });
+    }
+
     const newUser = newUserRows[0];
 
     // ----------------------------------------------------------
-    // Create token
+    // Create JWT token
     // ----------------------------------------------------------
 
     const token = jwt.sign(
@@ -209,6 +220,10 @@ app.post("/api/signup", async (req, res) => {
 
     console.log("SIGNUP SUCCESS:", newUser);
 
+    // ----------------------------------------------------------
+    // Return success
+    // ----------------------------------------------------------
+
     return res.status(201).json({
       success: true,
       message: "Account created successfully.",
@@ -216,7 +231,10 @@ app.post("/api/signup", async (req, res) => {
       token: token,
     });
   } catch (error) {
-    console.error("SIGNUP ERROR:", error);
+    console.error("=================================");
+    console.error("SIGNUP ERROR");
+    console.error(error);
+    console.error("=================================");
 
     return res.status(500).json({
       success: false,
@@ -235,10 +253,11 @@ app.post("/api/login", async (req, res) => {
   try {
     const { username, phone } = req.body;
 
-    console.log("LOGIN REQUEST:", {
-      username,
-      phone,
-    });
+    console.log("=================================");
+    console.log("LOGIN REQUEST");
+    console.log("Username:", username);
+    console.log("Phone:", phone);
+    console.log("=================================");
 
     // ----------------------------------------------------------
     // Validate username
@@ -282,7 +301,7 @@ app.post("/api/login", async (req, res) => {
     );
 
     // ----------------------------------------------------------
-    // User not found
+    // User doesn't exist
     // ----------------------------------------------------------
 
     if (users.length === 0) {
@@ -295,7 +314,7 @@ app.post("/api/login", async (req, res) => {
     const user = users[0];
 
     // ----------------------------------------------------------
-    // Create JWT
+    // Create JWT token
     // ----------------------------------------------------------
 
     const token = jwt.sign(
@@ -322,7 +341,10 @@ app.post("/api/login", async (req, res) => {
       token: token,
     });
   } catch (error) {
-    console.error("LOGIN ERROR:", error);
+    console.error("=================================");
+    console.error("LOGIN ERROR");
+    console.error(error);
+    console.error("=================================");
 
     return res.status(500).json({
       success: false,
@@ -336,8 +358,9 @@ app.post("/api/login", async (req, res) => {
 // START SERVER
 // ============================================================
 
-// THIS IS VERY IMPORTANT FOR RAILWAY
-
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log("=================================");
+  console.log(`TikTok Clone API running on port ${PORT}`);
+  console.log(`Allowed frontend: https://tiktok-api-com.up.railway.app`);
+  console.log("=================================");
 });
