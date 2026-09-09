@@ -15,7 +15,6 @@ function App() {
 
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPhone, setLoginPhone] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
 
   // ============================================================
   // SIGNUP STATES
@@ -23,8 +22,6 @@ function App() {
 
   const [signupUsername, setSignupUsername] = useState("");
   const [signupPhone, setSignupPhone] = useState("");
-  const [signupPassword, setSignupPassword] = useState("");
-  const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
 
   // ============================================================
   // GENERAL APP STATES
@@ -41,7 +38,7 @@ function App() {
   // PHONE VALIDATION
   // ============================================================
 
-  const isValidPhone = (phone) => {
+  const validatePhone = (phone) => {
     return /^09\d{9}$/.test(phone);
   };
 
@@ -54,12 +51,15 @@ function App() {
 
     setMessage("");
 
+    const username = loginUsername.trim();
+    const phone = loginPhone.trim();
+
     // ----------------------------------------------------------
     // CHECK USERNAME
     // ----------------------------------------------------------
 
-    if (!loginUsername.trim()) {
-      setMessage("Username is required.");
+    if (!username) {
+      setMessage("Please enter your username.");
       return;
     }
 
@@ -67,28 +67,15 @@ function App() {
     // CHECK PHONE
     // ----------------------------------------------------------
 
-    if (!loginPhone.trim()) {
-      setMessage("Phone number is required.");
+    if (!phone) {
+      setMessage("Please enter your phone number.");
       return;
     }
 
-    // ----------------------------------------------------------
-    // CHECK PHONE FORMAT
-    // ----------------------------------------------------------
-
-    if (!isValidPhone(loginPhone)) {
+    if (!validatePhone(phone)) {
       setMessage(
         "Phone number must start with 09 and contain exactly 11 digits.",
       );
-      return;
-    }
-
-    // ----------------------------------------------------------
-    // CHECK PASSWORD
-    // ----------------------------------------------------------
-
-    if (!loginPassword) {
-      setMessage("Password is required.");
       return;
     }
 
@@ -107,15 +94,10 @@ function App() {
         },
 
         body: JSON.stringify({
-          username: loginUsername.trim(),
-          phone: loginPhone.trim(),
-          password: loginPassword,
+          username: username,
+          phone: phone,
         }),
       });
-
-      // --------------------------------------------------------
-      // READ SERVER RESPONSE
-      // --------------------------------------------------------
 
       const data = await response.json();
 
@@ -124,29 +106,25 @@ function App() {
       // --------------------------------------------------------
 
       if (data.success) {
-        // Save logged-in user
         localStorage.setItem("user", JSON.stringify(data.user));
 
-        // Save user in React
         setUser(data.user);
 
-        // Get coins from database
         setCoins(data.user.coins ?? 5000);
 
-        // Clear login fields
         setLoginUsername("");
         setLoginPhone("");
-        setLoginPassword("");
 
-        // Clear message
         setMessage("");
 
-        // Go to dashboard
         setScreen("dashboard");
-      } else {
-        setMessage(
-          data.message || "Invalid username, phone number, or password.",
-        );
+      }
+
+      // --------------------------------------------------------
+      // LOGIN FAILED
+      // --------------------------------------------------------
+      else {
+        setMessage(data.message || "Invalid username or phone number.");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -166,11 +144,14 @@ function App() {
 
     setMessage("");
 
+    const username = signupUsername.trim();
+    const phone = signupPhone.trim();
+
     // ----------------------------------------------------------
     // CHECK USERNAME
     // ----------------------------------------------------------
 
-    if (!signupUsername.trim()) {
+    if (!username) {
       setMessage("Username is required.");
       return;
     }
@@ -179,42 +160,15 @@ function App() {
     // CHECK PHONE
     // ----------------------------------------------------------
 
-    if (!signupPhone.trim()) {
+    if (!phone) {
       setMessage("Phone number is required.");
       return;
     }
 
-    // ----------------------------------------------------------
-    // CHECK PHONE FORMAT
-    // ----------------------------------------------------------
-
-    if (!isValidPhone(signupPhone)) {
+    if (!validatePhone(phone)) {
       setMessage(
         "Phone number must start with 09 and contain exactly 11 digits.",
       );
-      return;
-    }
-
-    // ----------------------------------------------------------
-    // CHECK PASSWORD
-    // ----------------------------------------------------------
-
-    if (!signupPassword) {
-      setMessage("Password is required.");
-      return;
-    }
-
-    if (signupPassword.length < 6) {
-      setMessage("Password must be at least 6 characters.");
-      return;
-    }
-
-    // ----------------------------------------------------------
-    // CHECK CONFIRM PASSWORD
-    // ----------------------------------------------------------
-
-    if (signupPassword !== signupConfirmPassword) {
-      setMessage("Passwords do not match.");
       return;
     }
 
@@ -233,15 +187,10 @@ function App() {
         },
 
         body: JSON.stringify({
-          username: signupUsername.trim(),
-          phone: signupPhone.trim(),
-          password: signupPassword,
+          username: username,
+          phone: phone,
         }),
       });
-
-      // --------------------------------------------------------
-      // READ SERVER RESPONSE
-      // --------------------------------------------------------
 
       const data = await response.json();
 
@@ -252,21 +201,27 @@ function App() {
       if (data.success) {
         setMessage("Account created successfully! Please log in.");
 
-        // Put signup information into login fields
-        setLoginUsername(signupUsername.trim());
-        setLoginPhone(signupPhone.trim());
+        // Put username into login field
+        setLoginUsername(username);
+
+        // Put phone into login field
+        setLoginPhone(phone);
 
         // Clear signup fields
         setSignupUsername("");
         setSignupPhone("");
-        setSignupPassword("");
-        setSignupConfirmPassword("");
 
-        // Return to login
+        // Go to login page
         setTimeout(() => {
           setScreen("login");
-        }, 800);
-      } else {
+          setMessage("");
+        }, 1000);
+      }
+
+      // --------------------------------------------------------
+      // SIGNUP FAILED
+      // --------------------------------------------------------
+      else {
         setMessage(data.message || "Registration failed.");
       }
     } catch (error) {
@@ -289,7 +244,6 @@ function App() {
 
     setLoginUsername("");
     setLoginPhone("");
-    setLoginPassword("");
 
     setCoins(5000);
 
@@ -349,46 +303,25 @@ function App() {
 
             <input
               type="tel"
-              inputMode="numeric"
-              maxLength={11}
-              placeholder="09XXXXXXXXX"
+              placeholder="Phone number (09XXXXXXXXX)"
               value={signupPhone}
               onChange={(e) => {
                 const value = e.target.value.replace(/\D/g, "");
 
-                setSignupPhone(value);
+                if (value.length <= 11) {
+                  setSignupPhone(value);
+                }
               }}
+              maxLength={11}
               required
             />
 
-            {/* PASSWORD */}
-
-            <input
-              type="password"
-              placeholder="Password"
-              value={signupPassword}
-              onChange={(e) => setSignupPassword(e.target.value)}
-              required
-            />
-
-            {/* CONFIRM PASSWORD */}
-
-            <input
-              type="password"
-              placeholder="Confirm password"
-              value={signupConfirmPassword}
-              onChange={(e) => setSignupConfirmPassword(e.target.value)}
-              required
-            />
-
-            {/* SIGN UP BUTTON */}
+            {/* SIGNUP BUTTON */}
 
             <button className="login-button" type="submit" disabled={loading}>
               {loading ? "Creating account..." : "Sign up"}
             </button>
           </form>
-
-          {/* MESSAGE */}
 
           {message && <div className="message">{message}</div>}
 
@@ -488,7 +421,7 @@ function App() {
             </button>
           </section>
 
-          {/* VIDEO CARDS */}
+          {/* VIDEO SECTION */}
 
           <section className="video-section">
             <h2>For You</h2>
@@ -592,25 +525,16 @@ function App() {
 
           <input
             type="tel"
-            inputMode="numeric"
-            maxLength={11}
-            placeholder="09XXXXXXXXX"
+            placeholder="Phone number (09XXXXXXXXX)"
             value={loginPhone}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, "");
 
-              setLoginPhone(value);
+              if (value.length <= 11) {
+                setLoginPhone(value);
+              }
             }}
-            required
-          />
-
-          {/* PASSWORD */}
-
-          <input
-            type="password"
-            placeholder="Password"
-            value={loginPassword}
-            onChange={(e) => setLoginPassword(e.target.value)}
+            maxLength={11}
             required
           />
 
@@ -620,17 +544,6 @@ function App() {
             {loading ? "Logging in..." : "Log in"}
           </button>
         </form>
-
-        {/* FORGOT PASSWORD */}
-
-        <button
-          className="forgot"
-          onClick={() => setMessage("Password recovery is not configured yet.")}
-        >
-          Forgot password?
-        </button>
-
-        {/* MESSAGE */}
 
         {message && <div className="message">{message}</div>}
       </main>
