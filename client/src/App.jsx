@@ -6,7 +6,7 @@ import "./App.css";
 // BACKEND API
 // ============================================================
 
-const API_URL = "https://tiktok-api-com.up.railway.app";
+const API_URL = "https://tiktok-api.up.railway.app";
 
 function App() {
   // ============================================================
