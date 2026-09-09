@@ -305,14 +305,17 @@ body {
 .coin-amount {
   font-size: 64px;
   font-weight: bold;
-  line-height: 1;
-  margin: 10px 0 5px;
+  line-height: 1.1;
+  margin: 10px 0 0;
+  display: block;
 }
 
 .coin-label {
   font-size: 24px;
   font-weight: bold;
-  margin: 5px 0 20px;
+  line-height: 1.2;
+  margin: 8px 0 20px;
+  display: block;
 }
 
 .demo-warning {
@@ -492,4 +495,17 @@ body {
   .bottom-nav {
     gap: 25px;
   }
+}
+.coin-amount {
+  display: block !important;
+  font-size: 64px !important;
+  line-height: 1.1 !important;
+  margin: 10px 0 0 !important;
+}
+
+.coin-label {
+  display: block !important;
+  font-size: 24px !important;
+  line-height: 1.2 !important;
+  margin: 12px 0 20px !important;
 }
