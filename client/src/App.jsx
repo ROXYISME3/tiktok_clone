@@ -6,7 +6,7 @@ import "./App.css";
 // RAILWAY BACKEND
 // ============================================================
 
-const API_URL = "https://tiktok-api-com.up.railway.app";
+const API_URL = "https://tiktok-api.up.railway.app";
 
 function App() {
   // ============================================================
@@ -35,7 +35,9 @@ function App() {
   const [coins, setCoins] = useState(5000);
 
   // ============================================================
-  // PHONE VALIDATION
+  // PHONE NUMBER VALIDATION
+  // Must start with 09 and contain exactly 11 digits
+  // Example: 09123456789
   // ============================================================
 
   const validatePhone = (phone) => {
@@ -55,11 +57,11 @@ function App() {
     const phone = loginPhone.trim();
 
     // ----------------------------------------------------------
-    // CHECK USERNAME
+    // CHECK NAME
     // ----------------------------------------------------------
 
     if (!username) {
-      setMessage("Please enter your username.");
+      setMessage("Please enter your name.");
       return;
     }
 
@@ -67,24 +69,19 @@ function App() {
     // CHECK PHONE
     // ----------------------------------------------------------
 
-    if (!phone) {
-      setMessage("Please enter your phone number.");
-      return;
-    }
-
     if (!validatePhone(phone)) {
       setMessage(
-        "Phone number must start with 09 and contain exactly 11 digits.",
+        "Phone number must start with 09 and contain exactly 11 numbers."
       );
       return;
     }
 
+    // ----------------------------------------------------------
+    // SEND LOGIN REQUEST
+    // ----------------------------------------------------------
+
     try {
       setLoading(true);
-
-      // --------------------------------------------------------
-      // SEND LOGIN REQUEST TO RAILWAY
-      // --------------------------------------------------------
 
       const response = await fetch(`${API_URL}/api/login`, {
         method: "POST",
@@ -102,34 +99,37 @@ function App() {
       const data = await response.json();
 
       // --------------------------------------------------------
-      // LOGIN SUCCESS
+      // SUCCESS
       // --------------------------------------------------------
 
       if (data.success) {
+        // Save user
         localStorage.setItem("user", JSON.stringify(data.user));
 
+        // Save user in React
         setUser(data.user);
 
+        // Get coins from database
         setCoins(data.user.coins ?? 5000);
 
+        // Clear login fields
         setLoginUsername("");
         setLoginPhone("");
 
+        // Clear message
         setMessage("");
 
+        // Open dashboard
         setScreen("dashboard");
-      }
-
-      // --------------------------------------------------------
-      // LOGIN FAILED
-      // --------------------------------------------------------
-      else {
-        setMessage(data.message || "Invalid username or phone number.");
+      } else {
+        setMessage(data.message || "Invalid name or phone number.");
       }
     } catch (error) {
       console.error("Login error:", error);
 
-      setMessage("Cannot connect to the server. Please try again.");
+      setMessage(
+        "Cannot connect to the server. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -148,11 +148,11 @@ function App() {
     const phone = signupPhone.trim();
 
     // ----------------------------------------------------------
-    // CHECK USERNAME
+    // CHECK NAME
     // ----------------------------------------------------------
 
     if (!username) {
-      setMessage("Username is required.");
+      setMessage("Please enter your name.");
       return;
     }
 
@@ -160,24 +160,19 @@ function App() {
     // CHECK PHONE
     // ----------------------------------------------------------
 
-    if (!phone) {
-      setMessage("Phone number is required.");
-      return;
-    }
-
     if (!validatePhone(phone)) {
       setMessage(
-        "Phone number must start with 09 and contain exactly 11 digits.",
+        "Phone number must start with 09 and contain exactly 11 numbers."
       );
       return;
     }
 
+    // ----------------------------------------------------------
+    // SEND SIGNUP REQUEST
+    // ----------------------------------------------------------
+
     try {
       setLoading(true);
-
-      // --------------------------------------------------------
-      // SEND SIGNUP REQUEST TO RAILWAY
-      // --------------------------------------------------------
 
       const response = await fetch(`${API_URL}/api/signup`, {
         method: "POST",
@@ -195,39 +190,40 @@ function App() {
       const data = await response.json();
 
       // --------------------------------------------------------
-      // SIGNUP SUCCESS
+      // SUCCESS
       // --------------------------------------------------------
 
       if (data.success) {
-        setMessage("Account created successfully! Please log in.");
+        setMessage(
+          "Account created successfully! You can now log in."
+        );
 
-        // Put username into login field
+        // Put the name into login
         setLoginUsername(username);
 
-        // Put phone into login field
+        // Put the phone into login
         setLoginPhone(phone);
 
         // Clear signup fields
         setSignupUsername("");
         setSignupPhone("");
 
-        // Go to login page
+        // Go to login after a short delay
         setTimeout(() => {
           setScreen("login");
           setMessage("");
         }, 1000);
-      }
-
-      // --------------------------------------------------------
-      // SIGNUP FAILED
-      // --------------------------------------------------------
-      else {
-        setMessage(data.message || "Registration failed.");
+      } else {
+        setMessage(
+          data.message || "Registration failed."
+        );
       }
     } catch (error) {
       console.error("Signup error:", error);
 
-      setMessage("Cannot connect to the server. Please try again.");
+      setMessage(
+        "Cannot connect to the server. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -260,7 +256,7 @@ function App() {
     alert(
       "Demo Cash Out\n\n" +
         "This is only a demonstration. " +
-        "The virtual coins have no real monetary value.",
+        "The virtual coins have no real monetary value."
     );
   };
 
@@ -271,6 +267,7 @@ function App() {
   if (screen === "signup") {
     return (
       <div className="tiktok-page">
+
         {/* HEADER */}
 
         <header className="header">
@@ -278,24 +275,32 @@ function App() {
             <img src={logo} alt="TikTok Clone" />
           </div>
 
-          <div className="help">? &nbsp; Feedback and help</div>
+          <div className="help">
+            ? &nbsp; Feedback and help
+          </div>
         </header>
 
         {/* SIGNUP */}
 
         <main className="login-container">
+
           <h1>Create an account</h1>
 
-          <p className="description">Create your TikTok Clone account.</p>
+          <p className="description">
+            Create your TikTok Clone account.
+          </p>
 
           <form onSubmit={handleSignup}>
-            {/* USERNAME */}
+
+            {/* NAME */}
 
             <input
               type="text"
-              placeholder="Username"
+              placeholder="Name"
               value={signupUsername}
-              onChange={(e) => setSignupUsername(e.target.value)}
+              onChange={(e) =>
+                setSignupUsername(e.target.value)
+              }
               required
             />
 
@@ -312,18 +317,32 @@ function App() {
                   setSignupPhone(value);
                 }
               }}
-              maxLength={11}
+              maxLength="11"
+              inputMode="numeric"
               required
             />
 
-            {/* SIGNUP BUTTON */}
+            {/* SIGN UP BUTTON */}
 
-            <button className="login-button" type="submit" disabled={loading}>
+            <button
+              className="login-button"
+              type="submit"
+              disabled={loading}
+            >
               {loading ? "Creating account..." : "Sign up"}
             </button>
+
           </form>
 
-          {message && <div className="message">{message}</div>}
+          {/* MESSAGE */}
+
+          {message && (
+            <div className="message">
+              {message}
+            </div>
+          )}
+
+          {/* LOGIN LINK */}
 
           <button
             className="forgot"
@@ -334,13 +353,16 @@ function App() {
           >
             Already have an account? Log in
           </button>
+
         </main>
 
         {/* FOOTER */}
 
         <footer className="footer">
+
           <div className="signup">
             Already have an account?
+
             <button
               onClick={() => {
                 setScreen("login");
@@ -352,11 +374,19 @@ function App() {
           </div>
 
           <div className="footer-bottom">
-            <button className="language">English (US)</button>
 
-            <span>© 2026 TikTok Clone</span>
+            <button className="language">
+              English (US)
+            </button>
+
+            <span>
+              © 2026 TikTok Clone
+            </span>
+
           </div>
+
         </footer>
+
       </div>
     );
   }
@@ -368,117 +398,195 @@ function App() {
   if (screen === "dashboard") {
     return (
       <div className="dashboard-page">
+
         {/* HEADER */}
 
         <header className="dashboard-header">
+
           <div className="dashboard-logo">
             <img src={logo} alt="TikTok Clone" />
           </div>
 
           <div className="dashboard-header-right">
-            <span className="help">? &nbsp; Feedback and help</span>
 
-            <button className="logout-button" onClick={handleLogout}>
+            <span className="help">
+              ? &nbsp; Feedback and help
+            </span>
+
+            <button
+              className="logout-button"
+              onClick={handleLogout}
+            >
               Log out
             </button>
+
           </div>
+
         </header>
 
         {/* DASHBOARD CONTENT */}
 
         <main className="dashboard-content">
+
+          {/* WELCOME */}
+
           <section className="welcome-section">
+
             <h1>
               Welcome
-              {user?.username ? `, ${user.username}` : ""}!
+              {user?.username
+                ? `, ${user.username}`
+                : ""}
+              !
             </h1>
 
             <p>
-              Discover videos, follow creators, and enjoy your personalized
-              experience.
+              Discover videos, follow creators, and enjoy
+              your personalized experience.
             </p>
+
           </section>
 
           {/* REWARD CARD */}
 
           <section className="reward-card">
-            <div className="reward-icon">🪙</div>
 
-            <h2>Congratulations!</h2>
+            <div className="reward-icon">
+              🪙
+            </div>
 
-            <p className="reward-text">You received</p>
+            <h2>
+              Congratulations!
+            </h2>
 
-            <div className="coin-amount">{coins.toLocaleString()}</div>
-
-            <p className="coin-label">Virtual Coins</p>
-
-            <p className="demo-warning">
-              Demo reward — these coins have no real monetary value.
+            <p className="reward-text">
+              You received
             </p>
 
-            <button className="cashout-button" onClick={handleCashOut}>
+            <div className="coin-amount">
+              {coins.toLocaleString()}
+            </div>
+
+            <p className="coin-label">
+              Virtual Coins
+            </p>
+
+            <p className="demo-warning">
+              Demo reward — these coins have no real
+              monetary value.
+            </p>
+
+            <button
+              className="cashout-button"
+              onClick={handleCashOut}
+            >
               Demo Cash Out
             </button>
+
           </section>
 
           {/* VIDEO SECTION */}
 
           <section className="video-section">
-            <h2>For You</h2>
+
+            <h2>
+              For You
+            </h2>
 
             <div className="video-grid">
+
               <div className="video-card">
-                <div className="video-placeholder">▶</div>
 
-                <h3>For You</h3>
+                <div className="video-placeholder">
+                  ▶
+                </div>
 
-                <p>Discover new videos</p>
+                <h3>
+                  For You
+                </h3>
+
+                <p>
+                  Discover new videos
+                </p>
+
               </div>
 
               <div className="video-card">
-                <div className="video-placeholder">▶</div>
 
-                <h3>Trending</h3>
+                <div className="video-placeholder">
+                  ▶
+                </div>
 
-                <p>See what's trending</p>
+                <h3>
+                  Trending
+                </h3>
+
+                <p>
+                  See what's trending
+                </p>
+
               </div>
 
               <div className="video-card">
-                <div className="video-placeholder">▶</div>
 
-                <h3>Following</h3>
+                <div className="video-placeholder">
+                  ▶
+                </div>
 
-                <p>Watch creators you follow</p>
+                <h3>
+                  Following
+                </h3>
+
+                <p>
+                  Watch creators you follow
+                </p>
+
               </div>
+
             </div>
+
           </section>
+
         </main>
 
         {/* BOTTOM NAVIGATION */}
 
         <nav className="bottom-nav">
+
           <button className="nav-item active">
             🏠
-            <span>Home</span>
+            <span>
+              Home
+            </span>
           </button>
 
           <button className="nav-item">
             🔍
-            <span>Discover</span>
+            <span>
+              Discover
+            </span>
           </button>
 
-          <button className="create-button">+</button>
+          <button className="create-button">
+            +
+          </button>
 
           <button className="nav-item">
             💬
-            <span>Inbox</span>
+            <span>
+              Inbox
+            </span>
           </button>
 
           <button className="nav-item">
             👤
-            <span>Profile</span>
+            <span>
+              Profile
+            </span>
           </button>
+
         </nav>
+
       </div>
     );
   }
@@ -489,35 +597,44 @@ function App() {
 
   return (
     <div className="tiktok-page">
+
       {/* HEADER */}
 
       <header className="header">
+
         <div className="logo">
           <img src={logo} alt="TikTok Clone" />
         </div>
 
-        <div className="help">? &nbsp; Feedback and help</div>
+        <div className="help">
+          ? &nbsp; Feedback and help
+        </div>
+
       </header>
 
       {/* LOGIN */}
 
       <main className="login-container">
-        <h1>Log in to TikTok</h1>
+
+        <h1>
+          Log in to TikTok
+        </h1>
 
         <p className="description">
-          Manage your account, check notifications,
-          <br />
-          comment on videos, and more.
+          Enter your name and phone number to continue.
         </p>
 
         <form onSubmit={handleLogin}>
-          {/* USERNAME */}
+
+          {/* NAME */}
 
           <input
             type="text"
-            placeholder="Username"
+            placeholder="Name"
             value={loginUsername}
-            onChange={(e) => setLoginUsername(e.target.value)}
+            onChange={(e) =>
+              setLoginUsername(e.target.value)
+            }
             required
           />
 
@@ -534,25 +651,41 @@ function App() {
                 setLoginPhone(value);
               }
             }}
-            maxLength={11}
+            maxLength="11"
+            inputMode="numeric"
             required
           />
 
           {/* LOGIN BUTTON */}
 
-          <button className="login-button" type="submit" disabled={loading}>
+          <button
+            className="login-button"
+            type="submit"
+            disabled={loading}
+          >
             {loading ? "Logging in..." : "Log in"}
           </button>
+
         </form>
 
-        {message && <div className="message">{message}</div>}
+        {/* MESSAGE */}
+
+        {message && (
+          <div className="message">
+            {message}
+          </div>
+        )}
+
       </main>
 
       {/* FOOTER */}
 
       <footer className="footer">
+
         <div className="signup">
+
           Don't have an account?
+
           <button
             onClick={() => {
               setScreen("signup");
@@ -561,14 +694,23 @@ function App() {
           >
             Sign up
           </button>
+
         </div>
 
         <div className="footer-bottom">
-          <button className="language">English (US)</button>
 
-          <span>© 2026 TikTok Clone</span>
+          <button className="language">
+            English (US)
+          </button>
+
+          <span>
+            © 2026 TikTok Clone
+          </span>
+
         </div>
+
       </footer>
+
     </div>
   );
 }
