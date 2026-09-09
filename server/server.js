@@ -14,7 +14,7 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:5173",
-   "https://tiktok-api.up.railway.app",
+  "https://tiktok-api.up.railway.app",
 ];
 
 app.use(
