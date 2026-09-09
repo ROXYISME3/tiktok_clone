@@ -14,34 +14,44 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 // ============================================================
-// CORS
+// YOUR RAILWAY URLS
 // ============================================================
-
-// FRONTEND:
-// https://tiktok-api.up.railway.app
 //
 // BACKEND:
 // https://tiktok-api-com.up.railway.app
+//
+// FRONTEND:
+// https://tiktok-api.up.railway.app
+//
+// ============================================================
+
+// ============================================================
+// ALLOWED FRONTEND ORIGINS
+// ============================================================
 
 const allowedOrigins = [
   "https://tiktok-api.up.railway.app",
   "http://localhost:5173",
 ];
 
+// ============================================================
+// CORS
+// ============================================================
+
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests without Origin
+      // Allow requests without an Origin header
       if (!origin) {
         return callback(null, true);
       }
 
-      // Allow our frontend
+      // Allow the frontend
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      console.log("BLOCKED CORS ORIGIN:", origin);
+      console.log("Blocked CORS origin:", origin);
 
       return callback(new Error("Not allowed by CORS"));
     },
@@ -63,8 +73,6 @@ app.use(express.json());
 // ============================================================
 
 app.get("/", (req, res) => {
-  console.log("API ROOT REQUEST");
-
   res.status(200).json({
     success: true,
     message: "TikTok Clone API is running!",
@@ -107,30 +115,30 @@ app.get("/api/test-db", async (req, res) => {
 
 // ============================================================
 // SIGN UP
-// USERNAME + PHONE ONLY
+// NAME + PHONE ONLY
 // ============================================================
 
 app.post("/api/signup", async (req, res) => {
   console.log("=================================");
-  console.log("SIGNUP REQUEST RECEIVED");
+  console.log("SIGNUP REQUEST");
   console.log("=================================");
 
   try {
-    console.log("Request body:", req.body);
+    // --------------------------------------------------------
+    // GET DATA
+    // --------------------------------------------------------
 
     const { username, phone } = req.body;
 
     console.log("Username:", username);
     console.log("Phone:", phone);
 
-    // ========================================================
+    // --------------------------------------------------------
     // VALIDATE USERNAME
-    // ========================================================
+    // --------------------------------------------------------
 
-    console.log("STEP 1: Validating username");
-
-    if (typeof username !== "string" || !username.trim()) {
-      console.log("SIGNUP ERROR: Invalid username");
+    if (!username || typeof username !== "string") {
+      console.log("SIGNUP ERROR: Username missing");
 
       return res.status(400).json({
         success: false,
@@ -138,16 +146,46 @@ app.post("/api/signup", async (req, res) => {
       });
     }
 
-    console.log("STEP 2: Username valid");
-
-    // ========================================================
+    // --------------------------------------------------------
     // VALIDATE PHONE
-    // ========================================================
+    // --------------------------------------------------------
 
-    console.log("STEP 3: Validating phone");
+    if (!phone || typeof phone !== "string") {
+      console.log("SIGNUP ERROR: Phone missing");
 
-    if (typeof phone !== "string" || !/^09\d{9}$/.test(phone.trim())) {
-      console.log("SIGNUP ERROR: Invalid phone");
+      return res.status(400).json({
+        success: false,
+        message: "Please enter your phone number.",
+      });
+    }
+
+    // --------------------------------------------------------
+    // CLEAN DATA
+    // --------------------------------------------------------
+
+    const cleanUsername = username.trim();
+    const cleanPhone = phone.trim();
+
+    console.log("Clean username:", cleanUsername);
+    console.log("Clean phone:", cleanPhone);
+
+    // --------------------------------------------------------
+    // CHECK USERNAME
+    // --------------------------------------------------------
+
+    if (cleanUsername.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter your name.",
+      });
+    }
+
+    // --------------------------------------------------------
+    // CHECK PHONE FORMAT
+    // --------------------------------------------------------
+
+    if (!/^09\d{9}$/.test(cleanPhone)) {
+      console.log("SIGNUP ERROR: Invalid phone format");
 
       return res.status(400).json({
         success: false,
@@ -156,33 +194,20 @@ app.post("/api/signup", async (req, res) => {
       });
     }
 
-    console.log("STEP 4: Phone valid");
+    console.log("STEP 1: Input validation successful");
 
-    // ========================================================
-    // CLEAN DATA
-    // ========================================================
-
-    const cleanUsername = username.trim();
-    const cleanPhone = phone.trim();
-
-    console.log("Clean username:", cleanUsername);
-    console.log("Clean phone:", cleanPhone);
-
-    // ========================================================
+    // --------------------------------------------------------
     // CHECK PHONE
-    // ========================================================
+    // --------------------------------------------------------
 
-    console.log("STEP 5: Checking phone in database");
+    console.log("STEP 2: Checking phone...");
 
     const [existingPhone] = await pool.query(
       "SELECT id FROM users WHERE phone = ? LIMIT 1",
       [cleanPhone]
     );
 
-    console.log(
-      "STEP 6: Phone check complete. Existing:",
-      existingPhone.length
-    );
+    console.log("Phone records found:", existingPhone.length);
 
     if (existingPhone.length > 0) {
       console.log("SIGNUP ERROR: Phone already registered");
@@ -193,21 +218,18 @@ app.post("/api/signup", async (req, res) => {
       });
     }
 
-    // ========================================================
+    // --------------------------------------------------------
     // CHECK USERNAME
-    // ========================================================
+    // --------------------------------------------------------
 
-    console.log("STEP 7: Checking username in database");
+    console.log("STEP 3: Checking username...");
 
     const [existingUsername] = await pool.query(
       "SELECT id FROM users WHERE username = ? LIMIT 1",
       [cleanUsername]
     );
 
-    console.log(
-      "STEP 8: Username check complete. Existing:",
-      existingUsername.length
-    );
+    console.log("Username records found:", existingUsername.length);
 
     if (existingUsername.length > 0) {
       console.log("SIGNUP ERROR: Username already registered");
@@ -218,11 +240,11 @@ app.post("/api/signup", async (req, res) => {
       });
     }
 
-    // ========================================================
-    // INSERT USER
-    // ========================================================
+    // --------------------------------------------------------
+    // CREATE ACCOUNT
+    // --------------------------------------------------------
 
-    console.log("STEP 9: Inserting new user");
+    console.log("STEP 4: Creating account...");
 
     const [result] = await pool.query(
       `
@@ -233,18 +255,20 @@ app.post("/api/signup", async (req, res) => {
       [cleanUsername, cleanPhone, 5000]
     );
 
-    console.log("STEP 10: User inserted");
+    console.log("STEP 5: Account created.");
     console.log("New user ID:", result.insertId);
 
-    // ========================================================
-    // GET USER
-    // ========================================================
-
-    console.log("STEP 11: Getting new user");
+    // --------------------------------------------------------
+    // GET NEW USER
+    // --------------------------------------------------------
 
     const [newUserRows] = await pool.query(
       `
-      SELECT id, username, phone, coins
+      SELECT
+        id,
+        username,
+        phone,
+        coins
       FROM users
       WHERE id = ?
       LIMIT 1
@@ -253,7 +277,7 @@ app.post("/api/signup", async (req, res) => {
     );
 
     if (newUserRows.length === 0) {
-      console.log("SIGNUP ERROR: New user not found");
+      console.log("SIGNUP ERROR: Could not retrieve new user.");
 
       return res.status(500).json({
         success: false,
@@ -263,31 +287,32 @@ app.post("/api/signup", async (req, res) => {
 
     const newUser = newUserRows[0];
 
-    console.log("STEP 12: New user retrieved");
+    console.log("STEP 6: New user retrieved.");
     console.log(newUser);
 
-    // ========================================================
+    // --------------------------------------------------------
     // CREATE JWT
-    // ========================================================
+    // --------------------------------------------------------
 
-    console.log("STEP 13: Creating JWT");
+    const jwtSecret =
+      process.env.JWT_SECRET || "development-secret";
 
     const token = jwt.sign(
       {
         id: newUser.id,
         username: newUser.username,
       },
-      process.env.JWT_SECRET || "development-secret",
+      jwtSecret,
       {
         expiresIn: "7d",
       }
     );
 
-    console.log("STEP 14: JWT created");
+    console.log("STEP 7: Token created.");
 
-    // ========================================================
+    // --------------------------------------------------------
     // SUCCESS
-    // ========================================================
+    // --------------------------------------------------------
 
     console.log("=================================");
     console.log("SIGNUP SUCCESS");
@@ -304,7 +329,7 @@ app.post("/api/signup", async (req, res) => {
     console.error("=================================");
     console.error("SIGNUP ERROR");
     console.error("Message:", error.message);
-    console.error("Stack:", error.stack);
+    console.error("Full error:", error);
     console.error("=================================");
 
     return res.status(500).json({
@@ -317,30 +342,30 @@ app.post("/api/signup", async (req, res) => {
 
 // ============================================================
 // LOGIN
-// USERNAME + PHONE ONLY
+// NAME + PHONE ONLY
 // ============================================================
 
 app.post("/api/login", async (req, res) => {
   console.log("=================================");
-  console.log("LOGIN REQUEST RECEIVED");
+  console.log("LOGIN REQUEST");
   console.log("=================================");
 
   try {
-    console.log("Request body:", req.body);
+    // --------------------------------------------------------
+    // GET DATA
+    // --------------------------------------------------------
 
     const { username, phone } = req.body;
 
     console.log("Username:", username);
     console.log("Phone:", phone);
 
-    // ========================================================
+    // --------------------------------------------------------
     // VALIDATE USERNAME
-    // ========================================================
+    // --------------------------------------------------------
 
-    console.log("STEP 1: Validating username");
-
-    if (typeof username !== "string" || !username.trim()) {
-      console.log("LOGIN ERROR: Invalid username");
+    if (!username || typeof username !== "string") {
+      console.log("LOGIN ERROR: Username missing");
 
       return res.status(400).json({
         success: false,
@@ -348,16 +373,32 @@ app.post("/api/login", async (req, res) => {
       });
     }
 
-    console.log("STEP 2: Username valid");
-
-    // ========================================================
+    // --------------------------------------------------------
     // VALIDATE PHONE
-    // ========================================================
+    // --------------------------------------------------------
 
-    console.log("STEP 3: Validating phone");
+    if (!phone || typeof phone !== "string") {
+      console.log("LOGIN ERROR: Phone missing");
 
-    if (typeof phone !== "string" || !/^09\d{9}$/.test(phone.trim())) {
-      console.log("LOGIN ERROR: Invalid phone");
+      return res.status(400).json({
+        success: false,
+        message: "Please enter your phone number.",
+      });
+    }
+
+    // --------------------------------------------------------
+    // CLEAN DATA
+    // --------------------------------------------------------
+
+    const cleanUsername = username.trim();
+    const cleanPhone = phone.trim();
+
+    // --------------------------------------------------------
+    // VALIDATE PHONE FORMAT
+    // --------------------------------------------------------
+
+    if (!/^09\d{9}$/.test(cleanPhone)) {
+      console.log("LOGIN ERROR: Invalid phone format");
 
       return res.status(400).json({
         success: false,
@@ -366,20 +407,21 @@ app.post("/api/login", async (req, res) => {
       });
     }
 
-    console.log("STEP 4: Phone valid");
+    console.log("STEP 1: Login input valid");
 
-    const cleanUsername = username.trim();
-    const cleanPhone = phone.trim();
-
-    // ========================================================
+    // --------------------------------------------------------
     // FIND USER
-    // ========================================================
+    // --------------------------------------------------------
 
-    console.log("STEP 5: Searching user");
+    console.log("STEP 2: Searching database...");
 
     const [users] = await pool.query(
       `
-      SELECT id, username, phone, coins
+      SELECT
+        id,
+        username,
+        phone,
+        coins
       FROM users
       WHERE username = ?
       AND phone = ?
@@ -388,15 +430,15 @@ app.post("/api/login", async (req, res) => {
       [cleanUsername, cleanPhone]
     );
 
-    console.log("STEP 6: User search complete");
+    console.log("STEP 3: Database search complete.");
     console.log("Users found:", users.length);
 
-    // ========================================================
+    // --------------------------------------------------------
     // USER NOT FOUND
-    // ========================================================
+    // --------------------------------------------------------
 
     if (users.length === 0) {
-      console.log("LOGIN ERROR: User not found");
+      console.log("LOGIN ERROR: User not found.");
 
       return res.status(401).json({
         success: false,
@@ -404,33 +446,38 @@ app.post("/api/login", async (req, res) => {
       });
     }
 
+    // --------------------------------------------------------
+    // USER FOUND
+    // --------------------------------------------------------
+
     const user = users[0];
 
-    console.log("STEP 7: User found");
+    console.log("STEP 4: User found.");
     console.log(user);
 
-    // ========================================================
+    // --------------------------------------------------------
     // CREATE JWT
-    // ========================================================
+    // --------------------------------------------------------
 
-    console.log("STEP 8: Creating JWT");
+    const jwtSecret =
+      process.env.JWT_SECRET || "development-secret";
 
     const token = jwt.sign(
       {
         id: user.id,
         username: user.username,
       },
-      process.env.JWT_SECRET || "development-secret",
+      jwtSecret,
       {
         expiresIn: "7d",
       }
     );
 
-    console.log("STEP 9: JWT created");
+    console.log("STEP 5: Token created.");
 
-    // ========================================================
-    // SUCCESS
-    // ========================================================
+    // --------------------------------------------------------
+    // LOGIN SUCCESS
+    // --------------------------------------------------------
 
     console.log("=================================");
     console.log("LOGIN SUCCESS");
@@ -447,7 +494,7 @@ app.post("/api/login", async (req, res) => {
     console.error("=================================");
     console.error("LOGIN ERROR");
     console.error("Message:", error.message);
-    console.error("Stack:", error.stack);
+    console.error("Full error:", error);
     console.error("=================================");
 
     return res.status(500).json({
@@ -467,6 +514,5 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`TikTok Clone API running on port ${PORT}`);
   console.log("Backend: https://tiktok-api-com.up.railway.app");
   console.log("Frontend: https://tiktok-api.up.railway.app");
-  console.log("Allowed frontend: https://tiktok-api.up.railway.app");
   console.log("=================================");
 });
