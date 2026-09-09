@@ -32,8 +32,8 @@ const PORT = process.env.PORT || 8080;
 const allowedOrigins = [
   "https://tiktok-api.up.railway.app",
   "http://localhost:5173",
+  "http://localhost:5174",
 ];
-
 // ============================================================
 // CORS
 // ============================================================
