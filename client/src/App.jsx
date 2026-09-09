@@ -71,7 +71,7 @@ function App() {
 
     if (!validatePhone(phone)) {
       setMessage(
-        "Phone number must start with 09 and contain exactly 11 numbers."
+        "Phone number must start with 09 and contain exactly 11 numbers.",
       );
       return;
     }
@@ -127,9 +127,7 @@ function App() {
     } catch (error) {
       console.error("Login error:", error);
 
-      setMessage(
-        "Cannot connect to the server. Please try again."
-      );
+      setMessage("Cannot connect to the server. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -162,7 +160,7 @@ function App() {
 
     if (!validatePhone(phone)) {
       setMessage(
-        "Phone number must start with 09 and contain exactly 11 numbers."
+        "Phone number must start with 09 and contain exactly 11 numbers.",
       );
       return;
     }
@@ -194,9 +192,7 @@ function App() {
       // --------------------------------------------------------
 
       if (data.success) {
-        setMessage(
-          "Account created successfully! You can now log in."
-        );
+        setMessage("Account created successfully! You can now log in.");
 
         // Put the name into login
         setLoginUsername(username);
@@ -214,16 +210,12 @@ function App() {
           setMessage("");
         }, 1000);
       } else {
-        setMessage(
-          data.message || "Registration failed."
-        );
+        setMessage(data.message || "Registration failed.");
       }
     } catch (error) {
       console.error("Signup error:", error);
 
-      setMessage(
-        "Cannot connect to the server. Please try again."
-      );
+      setMessage("Cannot connect to the server. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -256,7 +248,7 @@ function App() {
     alert(
       "Demo Cash Out\n\n" +
         "This is only a demonstration. " +
-        "The virtual coins have no real monetary value."
+        "The virtual coins have no real monetary value.",
     );
   };
 
@@ -267,7 +259,6 @@ function App() {
   if (screen === "signup") {
     return (
       <div className="tiktok-page">
-
         {/* HEADER */}
 
         <header className="header">
@@ -275,32 +266,24 @@ function App() {
             <img src={logo} alt="TikTok Clone" />
           </div>
 
-          <div className="help">
-            ? &nbsp; Feedback and help
-          </div>
+          <div className="help">? &nbsp; Feedback and help</div>
         </header>
 
         {/* SIGNUP */}
 
         <main className="login-container">
-
           <h1>Create an account</h1>
 
-          <p className="description">
-            Create your TikTok Clone account.
-          </p>
+          <p className="description">Create your TikTok Clone account.</p>
 
           <form onSubmit={handleSignup}>
-
             {/* NAME */}
 
             <input
               type="text"
               placeholder="Name"
               value={signupUsername}
-              onChange={(e) =>
-                setSignupUsername(e.target.value)
-              }
+              onChange={(e) => setSignupUsername(e.target.value)}
               required
             />
 
@@ -324,23 +307,14 @@ function App() {
 
             {/* SIGN UP BUTTON */}
 
-            <button
-              className="login-button"
-              type="submit"
-              disabled={loading}
-            >
+            <button className="login-button" type="submit" disabled={loading}>
               {loading ? "Creating account..." : "Sign up"}
             </button>
-
           </form>
 
           {/* MESSAGE */}
 
-          {message && (
-            <div className="message">
-              {message}
-            </div>
-          )}
+          {message && <div className="message">{message}</div>}
 
           {/* LOGIN LINK */}
 
@@ -353,16 +327,13 @@ function App() {
           >
             Already have an account? Log in
           </button>
-
         </main>
 
         {/* FOOTER */}
 
         <footer className="footer">
-
           <div className="signup">
             Already have an account?
-
             <button
               onClick={() => {
                 setScreen("login");
@@ -374,19 +345,11 @@ function App() {
           </div>
 
           <div className="footer-bottom">
+            <button className="language">English (US)</button>
 
-            <button className="language">
-              English (US)
-            </button>
-
-            <span>
-              © 2026 TikTok Clone
-            </span>
-
+            <span>© 2026 TikTok Clone</span>
           </div>
-
         </footer>
-
       </div>
     );
   }
@@ -398,195 +361,119 @@ function App() {
   if (screen === "dashboard") {
     return (
       <div className="dashboard-page">
-
         {/* HEADER */}
 
         <header className="dashboard-header">
-
           <div className="dashboard-logo">
             <img src={logo} alt="TikTok Clone" />
           </div>
 
           <div className="dashboard-header-right">
+            <span className="help">? &nbsp; Feedback and help</span>
 
-            <span className="help">
-              ? &nbsp; Feedback and help
-            </span>
-
-            <button
-              className="logout-button"
-              onClick={handleLogout}
-            >
+            <button className="logout-button" onClick={handleLogout}>
               Log out
             </button>
-
           </div>
-
         </header>
 
         {/* DASHBOARD CONTENT */}
 
         <main className="dashboard-content">
-
           {/* WELCOME */}
 
           <section className="welcome-section">
-
             <h1>
               Welcome
-              {user?.username
-                ? `, ${user.username}`
-                : ""}
-              !
+              {user?.username ? `, ${user.username}` : ""}!
             </h1>
 
             <p>
-              Discover videos, follow creators, and enjoy
-              your personalized experience.
+              Discover videos, follow creators, and enjoy your personalized
+              experience.
             </p>
-
           </section>
 
           {/* REWARD CARD */}
 
           <section className="reward-card">
+            <div className="reward-icon">🪙</div>
 
-            <div className="reward-icon">
-              🪙
-            </div>
+            <h2>Congratulations!</h2>
 
-            <h2>
-              Congratulations!
-            </h2>
+            <p className="reward-text">You received</p>
 
-            <p className="reward-text">
-              You received
-            </p>
+            <div className="coin-amount">{coins.toLocaleString()}</div>
 
-            <div className="coin-amount">
-              {coins.toLocaleString()}
-            </div>
-
-            <p className="coin-label">
-              Virtual Coins
-            </p>
+            <p className="coin-label">Virtual Coins</p>
 
             <p className="demo-warning">
-              Demo reward — these coins have no real
-              monetary value.
+              Demo reward — these coins have no real monetary value.
             </p>
 
-            <button
-              className="cashout-button"
-              onClick={handleCashOut}
-            >
+            <button className="cashout-button" onClick={handleCashOut}>
               Demo Cash Out
             </button>
-
           </section>
 
           {/* VIDEO SECTION */}
 
           <section className="video-section">
-
-            <h2>
-              For You
-            </h2>
+            <h2>For You</h2>
 
             <div className="video-grid">
-
               <div className="video-card">
+                <div className="video-placeholder">▶</div>
 
-                <div className="video-placeholder">
-                  ▶
-                </div>
+                <h3>For You</h3>
 
-                <h3>
-                  For You
-                </h3>
-
-                <p>
-                  Discover new videos
-                </p>
-
+                <p>Discover new videos</p>
               </div>
 
               <div className="video-card">
+                <div className="video-placeholder">▶</div>
 
-                <div className="video-placeholder">
-                  ▶
-                </div>
+                <h3>Trending</h3>
 
-                <h3>
-                  Trending
-                </h3>
-
-                <p>
-                  See what's trending
-                </p>
-
+                <p>See what's trending</p>
               </div>
 
               <div className="video-card">
+                <div className="video-placeholder">▶</div>
 
-                <div className="video-placeholder">
-                  ▶
-                </div>
+                <h3>Following</h3>
 
-                <h3>
-                  Following
-                </h3>
-
-                <p>
-                  Watch creators you follow
-                </p>
-
+                <p>Watch creators you follow</p>
               </div>
-
             </div>
-
           </section>
-
         </main>
 
         {/* BOTTOM NAVIGATION */}
 
         <nav className="bottom-nav">
-
           <button className="nav-item active">
             🏠
-            <span>
-              Home
-            </span>
+            <span>Home</span>
           </button>
 
           <button className="nav-item">
             🔍
-            <span>
-              Discover
-            </span>
+            <span>Discover</span>
           </button>
 
-          <button className="create-button">
-            +
-          </button>
+          <button className="create-button">+</button>
 
           <button className="nav-item">
             💬
-            <span>
-              Inbox
-            </span>
+            <span>Inbox</span>
           </button>
 
           <button className="nav-item">
             👤
-            <span>
-              Profile
-            </span>
+            <span>Profile</span>
           </button>
-
         </nav>
-
       </div>
     );
   }
@@ -597,44 +484,33 @@ function App() {
 
   return (
     <div className="tiktok-page">
-
       {/* HEADER */}
 
       <header className="header">
-
         <div className="logo">
           <img src={logo} alt="TikTok Clone" />
         </div>
 
-        <div className="help">
-          ? &nbsp; Feedback and help
-        </div>
-
+        <div className="help">? &nbsp; Feedback and help</div>
       </header>
 
       {/* LOGIN */}
 
       <main className="login-container">
-
-        <h1>
-          Log in to TikTok
-        </h1>
+        <h1>Log in to TikTok</h1>
 
         <p className="description">
           Enter your name and phone number to continue.
         </p>
 
         <form onSubmit={handleLogin}>
-
           {/* NAME */}
 
           <input
             type="text"
             placeholder="Name"
             value={loginUsername}
-            onChange={(e) =>
-              setLoginUsername(e.target.value)
-            }
+            onChange={(e) => setLoginUsername(e.target.value)}
             required
           />
 
@@ -658,34 +534,21 @@ function App() {
 
           {/* LOGIN BUTTON */}
 
-          <button
-            className="login-button"
-            type="submit"
-            disabled={loading}
-          >
+          <button className="login-button" type="submit" disabled={loading}>
             {loading ? "Logging in..." : "Log in"}
           </button>
-
         </form>
 
         {/* MESSAGE */}
 
-        {message && (
-          <div className="message">
-            {message}
-          </div>
-        )}
-
+        {message && <div className="message">{message}</div>}
       </main>
 
       {/* FOOTER */}
 
       <footer className="footer">
-
         <div className="signup">
-
           Don't have an account?
-
           <button
             onClick={() => {
               setScreen("signup");
@@ -694,23 +557,14 @@ function App() {
           >
             Sign up
           </button>
-
         </div>
 
         <div className="footer-bottom">
+          <button className="language">English (US)</button>
 
-          <button className="language">
-            English (US)
-          </button>
-
-          <span>
-            © 2026 TikTok Clone
-          </span>
-
+          <span>© 2026 TikTok Clone</span>
         </div>
-
       </footer>
-
     </div>
   );
 }
