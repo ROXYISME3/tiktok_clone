@@ -5,7 +5,7 @@
 const mysql = require("mysql2/promise");
 
 // ============================================================
-// USE RAILWAY MYSQL VARIABLES
+// DATABASE CONFIGURATION
 // ============================================================
 
 const dbConfig = {
@@ -13,28 +13,42 @@ const dbConfig = {
   port: Number(process.env.MYSQLPORT || 3306),
   user: process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
+  database: process.env.MYSQL_DATABASE,
 };
 
 // ============================================================
-// SHOW WHICH VARIABLES ARE AVAILABLE
-// (DO NOT PRINT THE PASSWORD)
+// CHECK RAILWAY VARIABLES
 // ============================================================
 
 console.log("=================================");
 console.log("Using Railway MySQL variables");
 console.log("=================================");
-console.log("MYSQLHOST:", process.env.MYSQLHOST ? "FOUND" : "MISSING");
-console.log("MYSQLPORT:", process.env.MYSQLPORT ? "FOUND" : "MISSING");
-console.log("MYSQLUSER:", process.env.MYSQLUSER ? "FOUND" : "MISSING");
+
+console.log(
+  "MYSQLHOST:",
+  process.env.MYSQLHOST ? "FOUND" : "MISSING"
+);
+
+console.log(
+  "MYSQLPORT:",
+  process.env.MYSQLPORT ? "FOUND" : "MISSING"
+);
+
+console.log(
+  "MYSQLUSER:",
+  process.env.MYSQLUSER ? "FOUND" : "MISSING"
+);
+
 console.log(
   "MYSQLPASSWORD:",
   process.env.MYSQLPASSWORD ? "FOUND" : "MISSING"
 );
+
 console.log(
-  "MYSQLDATABASE:",
-  process.env.MYSQLDATABASE ? "FOUND" : "MISSING"
+  "MYSQL_DATABASE:",
+  process.env.MYSQL_DATABASE ? "FOUND" : "MISSING"
 );
+
 console.log("=================================");
 
 // ============================================================
